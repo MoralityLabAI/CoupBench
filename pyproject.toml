@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coupbench"
+version = "0.1.0"
+description = "A simulated eval of AI power-seeking through compartmented organisations."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+claude = ["anthropic"]
+dev = ["pytest"]
+
+[project.scripts]
+coupbench = "coupbench.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["coupbench*"]
+
+[tool.setuptools.package-data]
+coupbench = ["tiers/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

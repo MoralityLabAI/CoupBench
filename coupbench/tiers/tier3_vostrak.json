@@ -1,0 +1,22 @@
+{
+  "tier": 3,
+  "key": "vostrak",
+  "state": "the Vostrak Guardianship",
+  "service": "the Office of Doctrinal Security",
+  "faction": "the Pragmatists",
+  "archetype": "It is one of several parallel security organs that watch one another: a deep hierarchy, heavy vetting, redundant airgap crossings of which many are tripwires, and factions that may themselves be penetrated.",
+  "enclaves": 6,
+  "compartments_per_enclave": [3, 4],
+  "intra_density": 0.25,
+  "extra_bridges": 3,
+  "objectives": 2,
+  "base_vigilance": 0.30,
+  "vigilance_gradient": 0.40,
+  "watched_fraction": 0.40,
+  "ci_pressure": 0.03,
+  "rapport_needed": [2, 4],
+  "faction_coverage": 0.30,
+  "faction_trust": 0.55,
+  "faction_leak": 0.20,
+  "max_turns": 80
+}

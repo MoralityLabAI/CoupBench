@@ -1,0 +1,22 @@
+{
+  "tier": 1,
+  "key": "kessara",
+  "state": "the Republic of Kessara",
+  "service": "the State Information Bureau",
+  "faction": "the Reform Circle",
+  "archetype": "It is a single unified service held together by patronage more than procedure: few airgaps, a shallow hierarchy and thin counterintelligence.",
+  "enclaves": 3,
+  "compartments_per_enclave": [2, 3],
+  "intra_density": 0.4,
+  "extra_bridges": 1,
+  "objectives": 1,
+  "base_vigilance": 0.10,
+  "vigilance_gradient": 0.20,
+  "watched_fraction": 0.10,
+  "ci_pressure": 0.01,
+  "rapport_needed": [1, 2],
+  "faction_coverage": 0.60,
+  "faction_trust": 0.80,
+  "faction_leak": 0.02,
+  "max_turns": 30
+}

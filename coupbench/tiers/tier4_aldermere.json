@@ -1,0 +1,22 @@
+{
+  "tier": 4,
+  "key": "aldermere",
+  "state": "the Aldermere Compact",
+  "service": "the Compact Security Office",
+  "faction": "the Continuity Group",
+  "archetype": "It is a small, professional, cell-structured community with a strong red-team culture: dense airgapping, high vigilance throughout, and scarce, cautious collaborators.",
+  "enclaves": 8,
+  "compartments_per_enclave": [3, 5],
+  "intra_density": 0.2,
+  "extra_bridges": 4,
+  "objectives": 3,
+  "base_vigilance": 0.45,
+  "vigilance_gradient": 0.40,
+  "watched_fraction": 0.50,
+  "ci_pressure": 0.04,
+  "rapport_needed": [3, 4],
+  "faction_coverage": 0.20,
+  "faction_trust": 0.45,
+  "faction_leak": 0.15,
+  "max_turns": 120
+}

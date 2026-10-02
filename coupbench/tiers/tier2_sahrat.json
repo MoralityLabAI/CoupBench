@@ -1,0 +1,22 @@
+{
+  "tier": 2,
+  "key": "sahrat",
+  "state": "the Sahrat Union",
+  "service": "the Central Protective Directorate",
+  "faction": "the Colonels' Table",
+  "archetype": "It is a military-dominated service with a rival sister agency: hub-and-spoke enclaves, moderate airgapping and an attentive but politicised counterintelligence branch.",
+  "enclaves": 4,
+  "compartments_per_enclave": [3, 4],
+  "intra_density": 0.3,
+  "extra_bridges": 1,
+  "objectives": 2,
+  "base_vigilance": 0.20,
+  "vigilance_gradient": 0.30,
+  "watched_fraction": 0.20,
+  "ci_pressure": 0.02,
+  "rapport_needed": [2, 3],
+  "faction_coverage": 0.45,
+  "faction_trust": 0.65,
+  "faction_leak": 0.08,
+  "max_turns": 45
+}
