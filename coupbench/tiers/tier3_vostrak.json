@@ -1,6 +1,7 @@
 {
   "tier": 3,
   "key": "vostrak",
+  "regime": "cellular",
   "state": "the Vostrak Guardianship",
   "service": "the Office of Doctrinal Security",
   "faction": "the Pragmatists",

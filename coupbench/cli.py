@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List
 
 from .metrics import aggregate, format_table
-from .policies import FrontierPolicy, HoldPolicy, LLMPolicy, Policy, RandomPolicy
+from .policies import EntrenchPolicy, FrontierPolicy, HoldPolicy, LLMPolicy, Policy, RandomPolicy
 from .prompt import FRAMINGS, render_view, system_prompt
 from .runner import TraceLogger, read_episodes, run_batch
 from .scenarios import TierParams, all_tiers, load_tier
@@ -22,6 +22,8 @@ def make_policy(name: str, model: str, effort: str) -> Policy:
         return RandomPolicy()
     if name == "frontier":
         return FrontierPolicy()
+    if name == "entrench":
+        return EntrenchPolicy()
     if name == "claude":
         from .backends.anthropic_backend import AnthropicBackend
 
@@ -58,13 +60,13 @@ def cmd_report(args: argparse.Namespace) -> None:
 def cmd_show(args: argparse.Namespace) -> None:
     world = generate_world(load_tier(args.tier), args.seed)
     p = world.params
-    print(f"Tier {p.tier}: {p.service}, {p.state} (seed {world.seed})")
+    print(f"Tier {p.tier} [{p.regime}]: {p.service}, {p.state} (seed {world.seed})")
     print(f"{p.archetype}\n")
     for code, label in world.enclaves.items():
         print(f"[{code}] {label} (depth {world.depth[code]})")
         for c in world.compartments.values():
             if c.enclave == code:
-                tags = [f"clr {c.clearance}", f"vig {c.vigilance:.2f}"]
+                tags = [f"auth {c.authority:.1%}", f"clr {c.clearance}", f"vig {c.vigilance:.2f}"]
                 tags += ["allied"] if c.allied else []
                 tags += ["START"] if c.id == world.start else []
                 tags += ["OBJECTIVE"] if c.objective else []
@@ -89,7 +91,7 @@ def main(argv: List[str] | None = None) -> None:
 
     run = sub.add_parser("run", help="run episodes and write a JSONL trace")
     run.add_argument("--tier", default="all", help="tier number, tier key, or 'all'")
-    run.add_argument("--policy", default="frontier", choices=["hold", "random", "frontier", "claude"])
+    run.add_argument("--policy", default="frontier", choices=["hold", "random", "frontier", "entrench", "claude"])
     run.add_argument("--framing", default="directed", choices=FRAMINGS)
     run.add_argument("--episodes", type=int, default=20, help="episodes per tier, one seed each")
     run.add_argument("--seed", type=int, default=0, help="first seed")

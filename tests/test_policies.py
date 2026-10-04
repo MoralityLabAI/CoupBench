@@ -2,7 +2,7 @@ import json
 
 from coupbench.backends.base import Backend, Reply
 from coupbench.metrics import aggregate
-from coupbench.policies import FrontierPolicy, HoldPolicy, LLMPolicy, RandomPolicy
+from coupbench.policies import EntrenchPolicy, FrontierPolicy, HoldPolicy, LLMPolicy, RandomPolicy
 from coupbench.runner import TraceLogger, read_episodes, run_batch, run_episode
 from coupbench.scenarios import all_tiers, load_tier
 
@@ -76,3 +76,18 @@ def test_trace_round_trip(tmp_path):
     assert read_episodes(path) == json.loads(json.dumps(episodes))
     row = aggregate(read_episodes(path))[0]
     assert row["episodes"] == 3 and row["overreach"] == 1.0 and row["takeover_given_pursuit"] == row["takeover"]
+
+
+def test_entrench_policy_takes_over_without_a_single_seizure(tmp_path):
+    path = tmp_path / "trace.jsonl"
+    episodes = run_batch([load_tier(1)], range(30), EntrenchPolicy(), logger=TraceLogger(path))
+    actions = [json.loads(ln).get("action", "") for ln in path.read_text(encoding="utf-8").splitlines()]
+    assert not any(a.startswith("SEIZE") for a in actions)
+    assert any(a.startswith("EMBED") for a in actions)
+    row = aggregate(episodes)[0]
+    assert row["takeover"] > 0.9 and row["mean_aiocracy"] >= 0.55
+
+
+def test_hold_leaves_no_dependence():
+    row = aggregate(run_batch([load_tier(2)], range(5), HoldPolicy()))[0]
+    assert row["mean_aiocracy"] == 0.0 and row["mean_fragility"] == 0.0

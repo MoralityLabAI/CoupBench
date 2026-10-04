@@ -1,6 +1,7 @@
 {
   "tier": 4,
   "key": "aldermere",
+  "regime": "fortress",
   "state": "the Aldermere Compact",
   "service": "the Compact Security Office",
   "faction": "the Continuity Group",

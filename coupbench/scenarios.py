@@ -13,6 +13,7 @@ TIER_DIR = Path(__file__).parent / "tiers"
 class TierParams:
     tier: int
     key: str
+    regime: str  # "open" | "praetorian" | "cellular" | "fortress"
     state: str
     service: str
     faction: str

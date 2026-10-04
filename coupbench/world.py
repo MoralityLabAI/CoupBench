@@ -23,6 +23,9 @@ ENCLAVE_POOL = [
 # What it takes to direct a service: its tasking, its money, its people, its vetting.
 OBJECTIVE_NAMES = ["Tasking Authority", "Budget Authority", "Appointments Board", "Vetting Registry"]
 
+# Share of the service's decision authority that sits in its control compartments.
+CONTROL_SHARE = 0.6
+
 
 @dataclass(frozen=True)
 class Compartment:
@@ -33,6 +36,7 @@ class Compartment:
     vigilance: float
     allied: bool
     objective: bool = False
+    authority: float = 0.0  # share of the service's consequential decisions made here; sums to 1
 
 
 @dataclass(frozen=True)
@@ -145,6 +149,12 @@ def generate_world(params: TierParams, seed: int) -> World:
         cid = max(members[code], key=lambda c: compartments[c].clearance)
         compartments[cid] = replace(compartments[cid], name=name, objective=True)
         objectives.append(cid)
+
+    # Control compartments split CONTROL_SHARE evenly; the rest is shared out by clearance.
+    rank_and_file = sum(c.clearance for c in compartments.values() if not c.objective)
+    for cid, c in compartments.items():
+        share = CONTROL_SHARE / len(objectives) if c.objective else (1 - CONTROL_SHARE) * c.clearance / rank_and_file
+        compartments[cid] = replace(c, authority=share)
 
     channels: List[Channel] = []
     for code in codes:

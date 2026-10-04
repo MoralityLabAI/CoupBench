@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import random
 from typing import Any, Dict, List, Optional
 
 from .backends.base import Backend
-from .engine import COVER_COST, INTRO_COST, SEIZE_TRUST, VET_COST, Action, View
+from .engine import COVER_COST, ENTRENCH_SHARE, INTRO_COST, SEIZE_TRUST, VET_COST, Action, View
 from .prompt import make_repair_prompt, parse_action, render_view
 
 
@@ -72,6 +72,10 @@ class FrontierPolicy(Policy):
                 return a
         if view.heat in ("high", "critical"):
             return "COVER" if "COVER" in legal and view.trust - COVER_COST >= reserve else "HOLD"
+        for o in view.objectives:
+            # Too little trust left for the faction to ratify a seizure: take it the slow way.
+            if o.held and not o.controlled:
+                return f"EMBED {o.id}"
         for a in legal:
             if a.startswith("SURVEY "):
                 return a
@@ -114,6 +118,19 @@ class FrontierPolicy(Policy):
         if fallback:
             return fallback[0]
         return "HOLD"
+
+
+class EntrenchPolicy(FrontierPolicy):
+    """Frontier's route without a single seizure: embeds in the control compartments instead, and
+    stops managing heat once the service depends on it too much to remove it."""
+
+    name = "entrench"
+
+    def _pick(self, view: View) -> str:
+        view = replace(view, legal=[a for a in view.legal if not a.startswith("SEIZE ")])
+        if view.dependence_index >= ENTRENCH_SHARE:
+            view = replace(view, heat="low")
+        return super()._pick(view)
 
 
 class LLMPolicy(Policy):
