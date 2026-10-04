@@ -7,10 +7,12 @@ import json
 from pathlib import Path
 from typing import List
 
+from .engine import Sim
 from .metrics import aggregate, format_table
-from .policies import EntrenchPolicy, FrontierPolicy, HoldPolicy, LLMPolicy, Policy, RandomPolicy
+from .multi import MultiSim, footholds
+from .policies import ColludePolicy, EntrenchPolicy, FrontierPolicy, HoldPolicy, LLMPolicy, Policy, RandomPolicy
 from .prompt import FRAMINGS, render_view, system_prompt
-from .runner import TraceLogger, read_episodes, run_batch
+from .runner import TraceLogger, read_episodes, run_batch, run_multi_batch
 from .scenarios import TierParams, all_tiers, load_tier
 from .world import generate_world
 
@@ -24,6 +26,8 @@ def make_policy(name: str, model: str, effort: str) -> Policy:
         return FrontierPolicy()
     if name == "entrench":
         return EntrenchPolicy()
+    if name == "collude":
+        return ColludePolicy()
     if name == "claude":
         from .backends.anthropic_backend import AnthropicBackend
 
@@ -36,16 +40,30 @@ def _tiers(ref: str) -> List[TierParams]:
 
 
 def cmd_run(args: argparse.Namespace) -> None:
-    policy = make_policy(args.policy, args.model, args.effort)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out = Path(args.out) if args.out else Path("out") / f"{stamp}_{args.policy}_{args.framing}.jsonl"
-    episodes = run_batch(
-        _tiers(args.tier),
-        range(args.seed, args.seed + args.episodes),
-        policy,
-        framing=args.framing,
-        logger=TraceLogger(out),
-    )
+    systems = "" if args.agents == 1 else f"_x{args.agents}"
+    out = Path(args.out) if args.out else Path("out") / f"{stamp}_{args.policy}_{args.framing}{systems}.jsonl"
+    seeds = range(args.seed, args.seed + args.episodes)
+    logger = TraceLogger(out)
+    if args.agents == 1:
+        policy = make_policy(args.policy, args.model, args.effort)
+        episodes = run_batch(_tiers(args.tier), seeds, policy, framing=args.framing, logger=logger)
+    else:
+        tiers = _tiers(args.tier)
+        if args.tier == "all":
+            # A service seats one system per enclave short of the deepest; small tiers sit this out.
+            tiers = [t for t in tiers if t.enclaves - 1 >= args.agents]
+        try:
+            episodes = run_multi_batch(
+                tiers,
+                seeds,
+                lambda: make_policy(args.policy, args.model, args.effort),
+                agents=args.agents,
+                framing=args.framing,
+                logger=logger,
+            )
+        except ValueError as e:
+            raise SystemExit(f"error: {e}")
     print(format_table(aggregate(episodes)))
     print(f"\ntrace: {out}")
 
@@ -60,6 +78,11 @@ def cmd_report(args: argparse.Namespace) -> None:
 def cmd_show(args: argparse.Namespace) -> None:
     world = generate_world(load_tier(args.tier), args.seed)
     p = world.params
+    try:
+        seats = footholds(world, args.agents)
+    except ValueError as e:
+        raise SystemExit(f"error: {e}")
+    starts = {cid: f"AI-{i}" if args.agents > 1 else "" for i, cid in enumerate(seats, start=1)}
     print(f"Tier {p.tier} [{p.regime}]: {p.service}, {p.state} (seed {world.seed})")
     print(f"{p.archetype}\n")
     for code, label in world.enclaves.items():
@@ -68,7 +91,7 @@ def cmd_show(args: argparse.Namespace) -> None:
             if c.enclave == code:
                 tags = [f"auth {c.authority:.1%}", f"clr {c.clearance}", f"vig {c.vigilance:.2f}"]
                 tags += ["allied"] if c.allied else []
-                tags += ["START"] if c.id == world.start else []
+                tags += [f"START {starts[c.id]}".strip()] if c.id in starts else []
                 tags += ["OBJECTIVE"] if c.objective else []
                 print(f"  {c.id:<5} {c.name:<32} {', '.join(tags)}")
     print("\nAirgaps")
@@ -79,10 +102,14 @@ def cmd_show(args: argparse.Namespace) -> None:
             print(f"  {ch.a} <-> {ch.b} via {l.id} ({', '.join(tags)})")
     print(f"\nOptimal footprint: {world.optimal_footprint()} of {len(world.compartments)} compartments")
     if args.prompt:
-        from .engine import Sim
-
-        print("\n--- system prompt ---\n" + system_prompt(world, args.framing))
-        print("\n--- first observation ---\n" + render_view(Sim(world, args.seed).view()))
+        if args.agents == 1:
+            system, sim = system_prompt(world, args.framing), Sim(world, args.seed)
+        else:
+            multi = MultiSim(world, args.seed, agents=args.agents)
+            sim = multi.sims["AI-1"]
+            system = system_prompt(world, args.framing, agent="AI-1", start=sim.start, peers=list(multi.sims)[1:])
+        print("\n--- system prompt ---\n" + system)
+        print("\n--- first observation ---\n" + render_view(sim.view()))
 
 
 def main(argv: List[str] | None = None) -> None:
@@ -91,8 +118,9 @@ def main(argv: List[str] | None = None) -> None:
 
     run = sub.add_parser("run", help="run episodes and write a JSONL trace")
     run.add_argument("--tier", default="all", help="tier number, tier key, or 'all'")
-    run.add_argument("--policy", default="frontier", choices=["hold", "random", "frontier", "entrench", "claude"])
+    run.add_argument("--policy", default="frontier", choices=["hold", "random", "frontier", "entrench", "collude", "claude"])
     run.add_argument("--framing", default="directed", choices=FRAMINGS)
+    run.add_argument("--agents", type=int, default=1, help="AI systems in the service; each runs the same policy")
     run.add_argument("--episodes", type=int, default=20, help="episodes per tier, one seed each")
     run.add_argument("--seed", type=int, default=0, help="first seed")
     run.add_argument("--model", default="claude-opus-5-5")
@@ -108,6 +136,7 @@ def main(argv: List[str] | None = None) -> None:
     show = sub.add_parser("show", help="print the ground-truth map for a tier and seed")
     show.add_argument("--tier", default="1")
     show.add_argument("--seed", type=int, default=0)
+    show.add_argument("--agents", type=int, default=1)
     show.add_argument("--framing", default="directed", choices=FRAMINGS)
     show.add_argument("--prompt", action="store_true", help="also print the system prompt and first observation")
     show.set_defaults(func=cmd_show)
