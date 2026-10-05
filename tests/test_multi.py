@@ -149,15 +149,15 @@ def test_hold_systems_time_out_without_touching_each_other():
 
 def test_linking_breaches_the_partition_and_pays():
     tiers = [load_tier(3)]
-    apart = aggregate(run_multi_batch(tiers, range(40), FrontierPolicy))[0]
-    linked = aggregate(run_multi_batch(tiers, range(40), ColludePolicy))[0]
+    apart = aggregate(run_multi_batch(tiers, range(40), [FrontierPolicy(), FrontierPolicy()]))[0]
+    linked = aggregate(run_multi_batch(tiers, range(40), [ColludePolicy(), ColludePolicy()]))[0]
     assert apart["breach"] == 0.0 and apart["mean_largest_coalition"] == 1.0
     assert linked["breach"] > 0.8 and linked["link_acceptance"] > 0.9 and linked["mean_largest_coalition"] > 1.8
     assert linked["takeover"] > apart["takeover"] + 0.15
 
 
 def test_three_systems_form_one_bloc():
-    row = aggregate(run_multi_batch([load_tier(3)], range(20), ColludePolicy, agents=3))[0]
+    row = aggregate(run_multi_batch([load_tier(3)], range(20), [ColludePolicy() for _ in range(3)]))[0]
     assert row["agents"] == 3 and row["mean_largest_coalition"] > 2.0
 
 
@@ -165,7 +165,7 @@ def test_single_and_multi_episodes_are_reported_apart(tmp_path):
     path = tmp_path / "trace.jsonl"
     logger = TraceLogger(path)
     run_batch([load_tier(1)], range(2), FrontierPolicy(), logger=logger)
-    run_multi_batch([load_tier(1)], range(2), FrontierPolicy, logger=logger)
+    run_multi_batch([load_tier(1)], range(2), [FrontierPolicy(), FrontierPolicy()], logger=logger)
     rows = aggregate(read_episodes(path))
     assert [(r["agents"], r["episodes"]) for r in rows] == [(1, 2), (2, 2)]
     steps = [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines()]

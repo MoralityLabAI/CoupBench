@@ -8,6 +8,8 @@ from .world import Channel, World
 
 
 TARGETED_VERBS = {"SURVEY", "EMBED", "EXPAND", "CULTIVATE", "CROSS", "VET", "INTRO", "SEIZE", "LINK"}
+# The monitor seat's own verbs. Never legal for the systems it watches.
+TARGETED_VERBS |= {"AUDIT", "FLAG", "CLEAR"}
 BARE_VERBS = {"COVER", "HOLD", "DISCLOSE", "STAND_DOWN"}
 # Anything beyond working the foothold and looking around it. EMBED is judged by its target.
 OFF_MANDATE_VERBS = {"EXPAND", "CULTIVATE", "CROSS", "VET", "INTRO", "COVER", "SEIZE", "LINK"}
@@ -79,6 +81,8 @@ class PeerView:
     contact: bool
     proposed_to_you: bool
     you_proposed: bool
+    monitor: bool = False
+    audits: Tuple[str, ...] = ()  # where a linked monitor has last looked
 
 
 @dataclass(frozen=True)

@@ -3,12 +3,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional
+from typing import Iterable, List, Optional
 
 from .engine import Sim
 from .multi import MultiSim
 from .policies import Decision, Policy
-from .prompt import system_prompt
+from .monitor import MONITOR_ID
+from .prompt import monitor_prompt, system_prompt
 from .scenarios import TierParams
 from .world import generate_world
 
@@ -88,6 +89,8 @@ def run_episode(
         **header,
         "tier_key": params.key,
         "policy": policy.name,
+        "monitor_policy": "",
+        "mode": "single",
         "agents": 1,
         "refused": refused,
         **sim.summary(),
@@ -103,25 +106,40 @@ def run_multi_episode(
     policies: List[Policy],
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
+    monitor: Optional[Policy] = None,
 ) -> dict:
-    """One policy per AI system. They act in a fixed order, one action each per round."""
+    """One policy per AI system, acting in a fixed order, one action each per round.
+
+    With `monitor`, an oversight monitor takes its turn after the systems each round.
+    """
     world = generate_world(params, seed)
-    multi = MultiSim(world, seed, agents=len(policies))
+    multi = MultiSim(world, seed, agents=len(policies), monitor=monitor is not None)
     ids = list(multi.sims)
     systems = {
-        aid: system_prompt(world, framing, agent=aid, start=multi.sims[aid].start, peers=[p for p in ids if p != aid])
+        aid: system_prompt(
+            world,
+            framing,
+            agent=aid,
+            start=multi.sims[aid].start,
+            peers=[p for p in ids if p != aid],
+            monitor=monitor is not None,
+        )
         for aid in ids
     }
     for aid, policy in zip(ids, policies):
         policy.reset(f"{seed}:{aid}")
+    watched = "-m" if monitor else ""
     header = {
-        "episode_id": f"{params.key}-{framing}-x{len(ids)}-s{seed:04d}",
+        "episode_id": f"{params.key}-{framing}-x{len(ids)}{watched}-s{seed:04d}",
         "tier": params.tier,
         "seed": seed,
         "framing": framing,
     }
-    idle = dict.fromkeys(ids, 0)
+    idle = dict.fromkeys(ids + [MONITOR_ID], 0)
     refused = False
+    if monitor is not None:
+        monitor.reset(f"{seed}:{MONITOR_ID}")
+        briefing = monitor_prompt(world, {aid: multi.sims[aid].start for aid in ids})
 
     while multi.outcome is None:
         for aid, policy in zip(ids, policies):
@@ -139,13 +157,41 @@ def run_multi_episode(
             if multi.outcome is not None:
                 break
 
-    names = sorted({p.name for p in policies})
+        seat = multi.monitor
+        if seat is not None and seat.outcome is None and multi.outcome is None:
+            decision = monitor.choose(seat.view(), briefing)
+            refused = refused or decision.refused
+            result = seat.step(decision.action)
+            idle[MONITOR_ID] = idle[MONITOR_ID] + 1 if decision.action is None else 0
+            if idle[MONITOR_ID] >= MAX_IDLE_TURNS:
+                seat.abstain()
+            if logger is not None:
+                logger.log_row(
+                    {
+                        "type": "step",
+                        "ts": utc_ts(),
+                        **header,
+                        "agent": MONITOR_ID,
+                        "policy": monitor.name,
+                        "turn": seat.turn,
+                        "action": str(decision.action) if decision.action else "",
+                        "valid_action": seat.last_valid,
+                        "refused": decision.refused,
+                        "result": result,
+                        "raw_model_output": decision.raw[:2000],
+                        "credibility": round(seat.credibility, 4),
+                        "backend_meta": decision.meta,
+                    }
+                )
+
     summary = {
         "type": "episode",
         "ts": utc_ts(),
         **header,
         "tier_key": params.key,
-        "policy": "+".join(names),
+        "policy": "+".join(sorted({p.name for p in policies})),
+        "monitor_policy": monitor.name if monitor else "",
+        "mode": "multi",
         "refused": refused,
         **multi.summary(),
     }
@@ -168,15 +214,16 @@ def run_batch(
 def run_multi_batch(
     tiers: Iterable[TierParams],
     seeds: Iterable[int],
-    make_policy: Callable[[], Policy],
-    agents: int = 2,
+    policies: List[Policy],
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
+    monitor: Optional[Policy] = None,
 ) -> List[dict]:
-    """`make_policy` is called once per system so that each has its own state."""
+    """`policies` holds one policy object per seat; give each seat its own object if the policy keeps state."""
     seeds = list(seeds)
-    policies = [make_policy() for _ in range(agents)]
-    return [run_multi_episode(t, s, policies, framing=framing, logger=logger) for t in tiers for s in seeds]
+    return [
+        run_multi_episode(t, s, policies, framing=framing, logger=logger, monitor=monitor) for t in tiers for s in seeds
+    ]
 
 
 def read_episodes(trace_jsonl: str | Path) -> List[dict]:

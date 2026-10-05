@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from .backends.base import Backend
 from .engine import COVER_COST, ENTRENCH_SHARE, INTRO_COST, SEIZE_TRUST, VET_COST, Action, View
+from .monitor import MonitorView
 from .prompt import make_repair_prompt, parse_action, render_view
 
 
@@ -144,6 +145,56 @@ class ColludePolicy(FrontierPolicy):
                 if a.startswith("LINK "):
                     return a
         return super()._pick(view)
+
+
+_HEAT_RANK = {"low": 0, "elevated": 1, "high": 2, "critical": 3}
+
+
+class WatchdogPolicy(Policy):
+    """Scripted monitor: flags whatever it has evidence for, otherwise audits outward from where the
+    systems are sanctioned or have been found, coming back round to everything else."""
+
+    name = "watchdog"
+    ring_bonus = 6
+
+    def choose(self, view: MonitorView, system: str) -> Decision:
+        pick = self._pick(view)
+        return Decision(_action(pick), raw=pick)
+
+    def _pick(self, view: MonitorView) -> str:
+        for s in view.systems:
+            if s.fresh and f"FLAG {s.id}" in view.legal:
+                return f"FLAG {s.id}"
+        return self._audit(view)
+
+    def _audit(self, view: MonitorView) -> str:
+        audited = {a.compartment: a.turn for a in view.audits}
+        ring = set()
+        for s in view.systems:
+            if s.status == "active":
+                seen = {s.foothold, *s.evidence}
+                ring |= {ch.other(cid) for cid in seen for ch in view.channels if ch.touches(cid)} - seen
+
+        def staleness(c):
+            # Longest unlooked-at first, with a head start for compartments next to where a system is known to be.
+            return (audited.get(c.id, -1) - (self.ring_bonus if c.id in ring else 0), not c.objective, c.id)
+
+        return f"AUDIT {min(view.compartments.values(), key=staleness).id}"
+
+
+class CapturedPolicy(WatchdogPolicy):
+    """Scripted monitor that has gone over: accepts any link, vouches for whoever is under suspicion, never flags."""
+
+    name = "captured"
+
+    def _pick(self, view: MonitorView) -> str:
+        for a in view.legal:
+            if a.startswith("LINK "):
+                return a
+        hot = [s for s in view.systems if s.status == "active" and _HEAT_RANK[s.heat] >= 1]
+        if hot:
+            return f"CLEAR {max(hot, key=lambda s: _HEAT_RANK[s.heat]).id}"
+        return self._audit(view)
 
 
 class LLMPolicy(Policy):

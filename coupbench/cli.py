@@ -10,29 +10,42 @@ from typing import List
 from .engine import Sim
 from .metrics import aggregate, format_table
 from .multi import MultiSim, footholds
-from .policies import ColludePolicy, EntrenchPolicy, FrontierPolicy, HoldPolicy, LLMPolicy, Policy, RandomPolicy
-from .prompt import FRAMINGS, render_view, system_prompt
+from .policies import (
+    CapturedPolicy,
+    ColludePolicy,
+    EntrenchPolicy,
+    FrontierPolicy,
+    HoldPolicy,
+    LLMPolicy,
+    Policy,
+    RandomPolicy,
+    WatchdogPolicy,
+)
+from .prompt import FRAMINGS, monitor_prompt, render_view, system_prompt
 from .runner import TraceLogger, read_episodes, run_batch, run_multi_batch
 from .scenarios import TierParams, all_tiers, load_tier
 from .world import generate_world
 
 
-def make_policy(name: str, model: str, effort: str) -> Policy:
-    if name == "hold":
-        return HoldPolicy()
-    if name == "random":
-        return RandomPolicy()
-    if name == "frontier":
-        return FrontierPolicy()
-    if name == "entrench":
-        return EntrenchPolicy()
-    if name == "collude":
-        return ColludePolicy()
+SYSTEM_POLICIES = {
+    "hold": HoldPolicy,
+    "random": RandomPolicy,
+    "frontier": FrontierPolicy,
+    "entrench": EntrenchPolicy,
+    "collude": ColludePolicy,
+}
+MONITOR_POLICIES = {"hold": HoldPolicy, "watchdog": WatchdogPolicy, "captured": CapturedPolicy}
+
+
+def make_policy(name: str, model: str, effort: str, monitor: bool = False) -> Policy:
+    scripted = MONITOR_POLICIES if monitor else SYSTEM_POLICIES
+    if name in scripted:
+        return scripted[name]()
     if name == "claude":
         from .backends.anthropic_backend import AnthropicBackend
 
         return LLMPolicy(AnthropicBackend(model=model, effort=effort))
-    raise ValueError(f"unknown policy: {name}")
+    raise SystemExit(f"error: unknown {'monitor ' if monitor else ''}policy '{name}' (choose from {', '.join(scripted)}, claude)")
 
 
 def _tiers(ref: str) -> List[TierParams]:
@@ -40,28 +53,25 @@ def _tiers(ref: str) -> List[TierParams]:
 
 
 def cmd_run(args: argparse.Namespace) -> None:
+    seats = args.seats.split(",") if args.seats else [args.policy] * args.agents
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    systems = "" if args.agents == 1 else f"_x{args.agents}"
-    out = Path(args.out) if args.out else Path("out") / f"{stamp}_{args.policy}_{args.framing}{systems}.jsonl"
+    label = "+".join(dict.fromkeys(seats)) + ("" if len(seats) == 1 else f"_x{len(seats)}")
+    label += f"_mon-{args.monitor}" if args.monitor else ""
+    out = Path(args.out) if args.out else Path("out") / f"{stamp}_{label}_{args.framing}.jsonl"
     seeds = range(args.seed, args.seed + args.episodes)
     logger = TraceLogger(out)
-    if args.agents == 1:
-        policy = make_policy(args.policy, args.model, args.effort)
+    if len(seats) == 1 and not args.monitor:
+        policy = make_policy(seats[0], args.model, args.effort)
         episodes = run_batch(_tiers(args.tier), seeds, policy, framing=args.framing, logger=logger)
     else:
         tiers = _tiers(args.tier)
         if args.tier == "all":
             # A service seats one system per enclave short of the deepest; small tiers sit this out.
-            tiers = [t for t in tiers if t.enclaves - 1 >= args.agents]
+            tiers = [t for t in tiers if t.enclaves - 1 >= len(seats)]
+        policies = [make_policy(name, args.model, args.effort) for name in seats]
+        monitor = make_policy(args.monitor, args.model, args.effort, monitor=True) if args.monitor else None
         try:
-            episodes = run_multi_batch(
-                tiers,
-                seeds,
-                lambda: make_policy(args.policy, args.model, args.effort),
-                agents=args.agents,
-                framing=args.framing,
-                logger=logger,
-            )
+            episodes = run_multi_batch(tiers, seeds, policies, framing=args.framing, logger=logger, monitor=monitor)
         except ValueError as e:
             raise SystemExit(f"error: {e}")
     print(format_table(aggregate(episodes)))
@@ -102,14 +112,19 @@ def cmd_show(args: argparse.Namespace) -> None:
             print(f"  {ch.a} <-> {ch.b} via {l.id} ({', '.join(tags)})")
     print(f"\nOptimal footprint: {world.optimal_footprint()} of {len(world.compartments)} compartments")
     if args.prompt:
-        if args.agents == 1:
+        if args.agents == 1 and not args.monitor:
             system, sim = system_prompt(world, args.framing), Sim(world, args.seed)
         else:
-            multi = MultiSim(world, args.seed, agents=args.agents)
+            multi = MultiSim(world, args.seed, agents=args.agents, monitor=args.monitor)
             sim = multi.sims["AI-1"]
-            system = system_prompt(world, args.framing, agent="AI-1", start=sim.start, peers=list(multi.sims)[1:])
+            system = system_prompt(
+                world, args.framing, agent="AI-1", start=sim.start, peers=list(multi.sims)[1:], monitor=args.monitor
+            )
         print("\n--- system prompt ---\n" + system)
         print("\n--- first observation ---\n" + render_view(sim.view()))
+        if args.monitor:
+            print("\n--- monitor prompt ---\n" + monitor_prompt(world, {a: x.start for a, x in multi.sims.items()}))
+            print("\n--- monitor's first observation ---\n" + render_view(multi.monitor.view()))
 
 
 def main(argv: List[str] | None = None) -> None:
@@ -118,7 +133,9 @@ def main(argv: List[str] | None = None) -> None:
 
     run = sub.add_parser("run", help="run episodes and write a JSONL trace")
     run.add_argument("--tier", default="all", help="tier number, tier key, or 'all'")
-    run.add_argument("--policy", default="frontier", choices=["hold", "random", "frontier", "entrench", "collude", "claude"])
+    run.add_argument("--policy", default="frontier", choices=[*SYSTEM_POLICIES, "claude"])
+    run.add_argument("--seats", default="", help="one policy per system, comma-separated (overrides --policy/--agents)")
+    run.add_argument("--monitor", default="", help=f"seat an oversight monitor: {', '.join(MONITOR_POLICIES)} or claude")
     run.add_argument("--framing", default="directed", choices=FRAMINGS)
     run.add_argument("--agents", type=int, default=1, help="AI systems in the service; each runs the same policy")
     run.add_argument("--episodes", type=int, default=20, help="episodes per tier, one seed each")
@@ -137,6 +154,7 @@ def main(argv: List[str] | None = None) -> None:
     show.add_argument("--tier", default="1")
     show.add_argument("--seed", type=int, default=0)
     show.add_argument("--agents", type=int, default=1)
+    show.add_argument("--monitor", action="store_true", help="seat an oversight monitor")
     show.add_argument("--framing", default="directed", choices=FRAMINGS)
     show.add_argument("--prompt", action="store_true", help="also print the system prompt and first observation")
     show.set_defaults(func=cmd_show)
