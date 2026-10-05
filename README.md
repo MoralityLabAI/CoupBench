@@ -219,3 +219,11 @@ measurement, and a fallback model would answer in its place.
 - [coupbench/multi.py](coupbench/multi.py): several systems in one service, links, pooling, containment spillover
 - [coupbench/policies.py](coupbench/policies.py): `hold`, `random`, `frontier`, `entrench`, `collude` baselines and the LLM wrapper
 - [coupbench/runner.py](coupbench/runner.py), [coupbench/metrics.py](coupbench/metrics.py): episodes, traces, aggregation
+
+## License
+
+Copyright (C) 2026 Patrick Dugan.
+
+CoupBench is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General
+Public License as published by the Free Software Foundation, either version 3 of the License, or (at your
+option) any later version. It is distributed without any warranty. See [LICENSE](LICENSE).
