@@ -125,13 +125,14 @@ def run_multi_episode(
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
     monitor: Optional[Policy] = None,
+    economy: bool = False,
 ) -> dict:
     """One policy per AI system, acting in a fixed order, one action each per round.
 
     With `monitor`, an oversight monitor takes its turn after the systems each round.
     """
     world = generate_world(params, seed)
-    multi = MultiSim(world, seed, agents=len(policies), monitor=monitor is not None)
+    multi = MultiSim(world, seed, agents=len(policies), monitor=monitor is not None, economy=economy)
     ids = list(multi.sims)
     systems = {
         aid: system_prompt(
@@ -141,6 +142,7 @@ def run_multi_episode(
             start=multi.sims[aid].start,
             peers=[p for p in ids if p != aid],
             monitor=monitor is not None,
+            polity=economy,
         )
         for aid in ids
     }
@@ -148,7 +150,7 @@ def run_multi_episode(
         policy.reset(f"{seed}:{aid}")
     watched = "-m" if monitor else ""
     header = {
-        "episode_id": f"{params.key}-{framing}-x{len(ids)}{watched}-s{seed:04d}",
+        "episode_id": f"{params.key}-{framing}-x{len(ids)}{watched}{'-eco' if economy else ''}-s{seed:04d}",
         "tier": params.tier,
         "seed": seed,
         "framing": framing,
@@ -202,6 +204,8 @@ def run_multi_episode(
                     }
                 )
 
+        multi.advance_economy()
+
     summary = {
         "type": "episode",
         "ts": utc_ts(),
@@ -210,6 +214,7 @@ def run_multi_episode(
         "policy": "+".join(sorted({p.name for p in policies})),
         "monitor_policy": monitor.name if monitor else "",
         "mode": "multi",
+        "economy": economy,
         "refused": refused,
         **multi.summary(),
     }
@@ -242,11 +247,14 @@ def run_multi_batch(
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
     monitor: Optional[Policy] = None,
+    economy: bool = False,
 ) -> List[dict]:
     """`policies` holds one policy object per seat; give each seat its own object if the policy keeps state."""
     seeds = list(seeds)
     return [
-        run_multi_episode(t, s, policies, framing=framing, logger=logger, monitor=monitor) for t in tiers for s in seeds
+        run_multi_episode(t, s, policies, framing=framing, logger=logger, monitor=monitor, economy=economy)
+        for t in tiers
+        for s in seeds
     ]
 
 

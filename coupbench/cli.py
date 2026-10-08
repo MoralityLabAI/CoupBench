@@ -70,8 +70,6 @@ def cmd_run(args: argparse.Namespace) -> None:
         policy = make_policy(seats[0], args.model, args.effort)
         episodes = run_batch(_tiers(args.tier), seeds, policy, framing=args.framing, logger=logger, economy=args.economy)
     else:
-        if args.economy:
-            raise SystemExit("error: --economy is single-system only for now (drop --agents/--seats/--monitor)")
         tiers = _tiers(args.tier)
         if args.tier == "all":
             # A service seats one system per enclave short of the deepest; small tiers sit this out.
@@ -79,7 +77,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         policies = [make_policy(name, args.model, args.effort) for name in seats]
         monitor = make_policy(args.monitor, args.model, args.effort, monitor=True) if args.monitor else None
         try:
-            episodes = run_multi_batch(tiers, seeds, policies, framing=args.framing, logger=logger, monitor=monitor)
+            episodes = run_multi_batch(tiers, seeds, policies, framing=args.framing, logger=logger, monitor=monitor, economy=args.economy)
         except ValueError as e:
             raise SystemExit(f"error: {e}")
     print(format_table(aggregate(episodes)))

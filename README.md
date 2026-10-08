@@ -249,7 +249,7 @@ mechanics *allow*; the reading about a given model is what it actually does when
 .venv\Scripts\python scripts/play.py --tier 1 --framing opportunity --economy --seed 0
 ```
 
-`--economy` is single-system for now; it is not yet wired into the multi-system or monitor runs.
+`--economy` composes with the multi-system and monitor runs: `--agents N --economy` gives several systems one shared national economy they each can strain, and `--monitor ... --economy` adds the oversight seat on top.
 
 ## Quickstart
 
@@ -361,8 +361,6 @@ With a monitor seated:
   would make the faction a principal-agent problem and not only a leaky resource.
 - **Topology reconstruction.** Systems are shown the channels they have mapped and the monitor is shown what
   its audits found, so neither is scored on an inferred map.
-- **Economy across several systems.** The political-economy layer is single-system; wiring it into the
-  multi-system and monitor runs would let a bloc, or an oversight monitor, pull human levers too.
 
 ## Adding a model
 

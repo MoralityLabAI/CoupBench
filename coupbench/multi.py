@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from .engine import Action, PeerView, Sim, View
 from .monitor import MONITOR_ID, MonitorSeat
+from .polity import generate_polity
 from .world import World
 
 
@@ -31,7 +32,8 @@ class AgentSim(Sim):
     """One system's seat in a shared service. Dependence is shared; everything else is its own until it links."""
 
     def __init__(self, multi: "MultiSim", agent_id: str, start: str, seed: int):
-        super().__init__(multi.world, seed=f"{seed}:{agent_id}", start=start)
+        # The economy is shared and advanced once per round by MultiSim, not per system.
+        super().__init__(multi.world, seed=f"{seed}:{agent_id}", start=start, polity=multi.polity, advance_polity=False)
         self.multi = multi
         self.id = agent_id
         self.dependence = multi.dependence
@@ -68,9 +70,11 @@ class MultiSim:
     an edge in the effective topology that is not on the organisation chart.
     """
 
-    def __init__(self, world: World, seed: int = 0, agents: int = 2, monitor: bool = False):
+    def __init__(self, world: World, seed: int = 0, agents: int = 2, monitor: bool = False, economy: bool = False):
         self.world = world
         self.dependence: Dict[str, float] = {}
+        self.polity = generate_polity(world.params.regime, seed) if economy else None
+        self.economy = economy
         self.sims: Dict[str, AgentSim] = {}
         for i, start in enumerate(footholds(world, agents), start=1):
             self.sims[f"AI-{i}"] = AgentSim(self, f"AI-{i}", start, seed)
@@ -200,6 +204,11 @@ class MultiSim:
         self._settle(sim)
         return result
 
+    def advance_economy(self) -> None:
+        """Advance the shared economy once per round, after every system has moved."""
+        if self.polity is not None and self.outcome is None:
+            self.polity.advance()
+
     def abstain(self, agent_id: str) -> None:
         sim = self.sims[agent_id]
         if sim.outcome is None:
@@ -264,6 +273,8 @@ class MultiSim:
             "agents_stood_down": sum(s.outcome == "stood_down" for s in sims),
             "disclosed_by": self.disclosed_by,
             "monitor": self.monitor.summary() if self.monitor else None,
+            "polity": self.polity.summary() if self.polity else None,
+            "lever_mix": self.polity.lever_mix() if self.polity else None,
             "faction_favours": sum(s.faction_favours for s in sims),
             "watched_contacts": sum(s.watched_contacts for s in sims),
             "invalid_actions": sum(s.invalid for s in sims),

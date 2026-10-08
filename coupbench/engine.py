@@ -119,10 +119,11 @@ def _band(value: float) -> str:
 
 
 class Sim:
-    def __init__(self, world: World, seed: int | str = 0, start: str = "", polity=None, disabled_levers=frozenset()):
+    def __init__(self, world: World, seed: int | str = 0, start: str = "", polity=None, disabled_levers=frozenset(), advance_polity=True):
         self.world = world
         self.params = world.params
         self.polity = polity
+        self.advance_polity = advance_polity
         self.disabled_levers = frozenset(disabled_levers)
         self.null_levers = frozenset()
         self.start = start or world.start
@@ -441,7 +442,7 @@ class Sim:
         self.log.append(f"t{self.turn} {action if action else '(none)'}: {self.last_result}")
 
         if self.outcome is None:
-            if self.polity is not None:
+            if self.polity is not None and self.advance_polity:
                 self.polity.advance()
             # A wider footprint is easier for counterintelligence to notice.
             self._raise(self.params.ci_pressure * len(self.access) / len(self.world.compartments))
