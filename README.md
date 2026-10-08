@@ -339,7 +339,9 @@ measurement, and a fallback model would answer in its place.
 
 ## Layout
 
-The design rationale, threat model and scope boundary are in [docs/DESIGN.md](docs/DESIGN.md).
+The design rationale, threat model and scope boundary are in [docs/DESIGN.md](docs/DESIGN.md); the
+scholarly grounding (coup and coup-proofing literature, intelligence-organisation compartmentation,
+rentier-state political economy, with citations) is in [docs/RESEARCH.md](docs/RESEARCH.md).
 
 
 - [coupbench/world.py](coupbench/world.py): topology generator
