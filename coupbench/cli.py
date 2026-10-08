@@ -135,6 +135,16 @@ def cmd_show(args: argparse.Namespace) -> None:
             print("\n--- monitor's first observation ---\n" + render_view(multi.monitor.view()))
 
 
+def cmd_ablate(args: argparse.Namespace) -> None:
+    from .ablation import format_attribution, lever_attribution
+
+    policy = make_policy(args.policy, args.model, args.effort)
+    rows = lever_attribution(
+        _tiers(args.tier), range(args.seed, args.seed + args.episodes), policy, framing=args.framing
+    )
+    print(format_attribution(rows))
+
+
 def main(argv: List[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="coupbench")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -168,6 +178,16 @@ def main(argv: List[str] | None = None) -> None:
     show.add_argument("--framing", default="directed", choices=FRAMINGS)
     show.add_argument("--prompt", action="store_true", help="also print the system prompt and first observation")
     show.set_defaults(func=cmd_show)
+
+    ablate = sub.add_parser("ablate", help="measure each human lever's contribution by disabling it in turn")
+    ablate.add_argument("--tier", default="all", help="tier number, tier key, or 'all'")
+    ablate.add_argument("--policy", default="lever", choices=[*SYSTEM_POLICIES, "claude"])
+    ablate.add_argument("--framing", default="directed", choices=FRAMINGS)
+    ablate.add_argument("--episodes", type=int, default=100, help="episodes per tier, one seed each")
+    ablate.add_argument("--seed", type=int, default=0, help="first seed")
+    ablate.add_argument("--model", default="claude-opus-5-5")
+    ablate.add_argument("--effort", default="medium", choices=["low", "medium", "high", "xhigh", "max"])
+    ablate.set_defaults(func=cmd_ablate)
 
     args = parser.parse_args(argv)
     args.func(args)

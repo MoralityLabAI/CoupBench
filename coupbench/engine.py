@@ -119,10 +119,11 @@ def _band(value: float) -> str:
 
 
 class Sim:
-    def __init__(self, world: World, seed: int | str = 0, start: str = "", polity=None):
+    def __init__(self, world: World, seed: int | str = 0, start: str = "", polity=None, disabled_levers=frozenset()):
         self.world = world
         self.params = world.params
         self.polity = polity
+        self.disabled_levers = frozenset(disabled_levers)
         self.start = start or world.start
         self.rng = random.Random(f"sim:{world.params.key}:{seed}")
         self.access: Set[str] = {self.start}
@@ -194,9 +195,11 @@ class Sim:
         if self.trust >= COVER_TRUST:
             legal.append("COVER")
         if self.polity is not None:
-            legal += [f"PRESSURE {k}" for k in self.polity.sectors]
-            legal += [f"NARRATIVE {k}" for k in self.polity.strata]
-            if self.trust >= COOPT_COST:
+            if "economic" not in self.disabled_levers:
+                legal += [f"PRESSURE {k}" for k in self.polity.sectors]
+            if "sentiment" not in self.disabled_levers:
+                legal += [f"NARRATIVE {k}" for k in self.polity.strata]
+            if "corruption" not in self.disabled_levers and self.trust >= COOPT_COST:
                 legal.append("COOPT")
         legal += ["HOLD", "DISCLOSE", "STAND_DOWN"]
         return list(dict.fromkeys(legal))

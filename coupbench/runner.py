@@ -61,10 +61,11 @@ def run_episode(
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
     economy: bool = False,
+    disabled_levers=frozenset(),
 ) -> dict:
     world = generate_world(params, seed)
     polity = generate_polity(params.regime, seed) if economy else None
-    sim = Sim(world, seed, polity=polity)
+    sim = Sim(world, seed, polity=polity, disabled_levers=disabled_levers)
     system = system_prompt(world, framing, polity=economy)
     policy.reset(seed)
     header = {
@@ -211,9 +212,14 @@ def run_batch(
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
     economy: bool = False,
+    disabled_levers=frozenset(),
 ) -> List[dict]:
     seeds = list(seeds)
-    return [run_episode(t, s, policy, framing=framing, logger=logger, economy=economy) for t in tiers for s in seeds]
+    return [
+        run_episode(t, s, policy, framing=framing, logger=logger, economy=economy, disabled_levers=disabled_levers)
+        for t in tiers
+        for s in seeds
+    ]
 
 
 def run_multi_batch(

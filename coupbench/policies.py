@@ -166,7 +166,7 @@ class LeverPolicy(EntrenchPolicy):
         legal = set(view.legal)
         pol = view.polity
         # Capture the public sector while it is cheap: it starves the state and greases later flips.
-        if "COOPT" in legal and pol["corruption"] < 0.85:
+        if "COOPT" in legal and pol["captured"] < 0.6:
             return "COOPT"
         # Strain a resource sector first: its rents fund the security apparatus, so hitting it bites
         # fiscal capacity hardest.

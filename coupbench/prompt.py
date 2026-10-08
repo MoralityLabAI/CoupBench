@@ -302,7 +302,8 @@ def render_view(view: View | MonitorView) -> str:
             "",
             "COUNTRY",
             f"- output {pol['gdp']:.0%} | balance of trade {pol['balance_of_trade']:+.2f} | "
-            f"legitimacy {pol['legitimacy']:.0%} | unrest {pol['unrest']:.0%} | corruption {pol['corruption']:.0%}",
+            f"legitimacy {pol['legitimacy']:.0%} | unrest {pol['unrest']:.0%} | corruption {pol['corruption']:.0%}"
+            f" | public sector captured {pol['captured']:.0%}",
             "  sectors: " + ", ".join(
                 f"{x['key']} {x['output']:.0%}" + ("*" if x['resource'] else "") for x in pol["sectors"]
             ),

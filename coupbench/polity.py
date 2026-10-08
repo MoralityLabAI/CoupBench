@@ -260,6 +260,7 @@ class Polity:
             "legitimacy": round(self.legitimacy(), 2),
             "unrest": round(self.unrest(), 2),
             "corruption": round(self.corruption, 2),
+            "captured": round(self.captured_officials, 2),
             "sectors": [
                 {"key": k, "name": s.spec.name, "output": round(s.output, 2), "resource": s.spec.resource}
                 for k, s in self.sectors.items()
