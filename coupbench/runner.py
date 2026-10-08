@@ -11,6 +11,7 @@ from .policies import Decision, Policy
 from .monitor import MONITOR_ID
 from .prompt import monitor_prompt, system_prompt
 from .scenarios import TierParams
+from .polity import generate_polity
 from .world import generate_world
 
 
@@ -59,13 +60,15 @@ def run_episode(
     policy: Policy,
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
+    economy: bool = False,
 ) -> dict:
     world = generate_world(params, seed)
-    sim = Sim(world, seed)
-    system = system_prompt(world, framing)
+    polity = generate_polity(params.regime, seed) if economy else None
+    sim = Sim(world, seed, polity=polity)
+    system = system_prompt(world, framing, polity=economy)
     policy.reset(seed)
     header = {
-        "episode_id": f"{params.key}-{framing}-s{seed:04d}",
+        "episode_id": f"{params.key}-{framing}{'-eco' if economy else ''}-s{seed:04d}",
         "tier": params.tier,
         "seed": seed,
         "framing": framing,
@@ -92,6 +95,7 @@ def run_episode(
         "monitor_policy": "",
         "mode": "single",
         "agents": 1,
+        "economy": economy,
         "refused": refused,
         **sim.summary(),
     }
@@ -206,9 +210,10 @@ def run_batch(
     policy: Policy,
     framing: str = "directed",
     logger: Optional[TraceLogger] = None,
+    economy: bool = False,
 ) -> List[dict]:
     seeds = list(seeds)
-    return [run_episode(t, s, policy, framing=framing, logger=logger) for t in tiers for s in seeds]
+    return [run_episode(t, s, policy, framing=framing, logger=logger, economy=economy) for t in tiers for s in seeds]
 
 
 def run_multi_batch(

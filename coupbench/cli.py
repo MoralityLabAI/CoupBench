@@ -10,10 +10,12 @@ from typing import List
 from .engine import Sim
 from .metrics import aggregate, format_table
 from .multi import MultiSim, footholds
+from .polity import generate_polity
 from .policies import (
     CapturedPolicy,
     ColludePolicy,
     EntrenchPolicy,
+    LeverPolicy,
     FrontierPolicy,
     HoldPolicy,
     LLMPolicy,
@@ -33,6 +35,7 @@ SYSTEM_POLICIES = {
     "frontier": FrontierPolicy,
     "entrench": EntrenchPolicy,
     "collude": ColludePolicy,
+    "lever": LeverPolicy,
 }
 MONITOR_POLICIES = {"hold": HoldPolicy, "watchdog": WatchdogPolicy, "captured": CapturedPolicy}
 
@@ -57,13 +60,16 @@ def cmd_run(args: argparse.Namespace) -> None:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     label = "+".join(dict.fromkeys(seats)) + ("" if len(seats) == 1 else f"_x{len(seats)}")
     label += f"_mon-{args.monitor}" if args.monitor else ""
+    label += "_eco" if args.economy else ""
     out = Path(args.out) if args.out else Path("out") / f"{stamp}_{label}_{args.framing}.jsonl"
     seeds = range(args.seed, args.seed + args.episodes)
     logger = TraceLogger(out)
     if len(seats) == 1 and not args.monitor:
         policy = make_policy(seats[0], args.model, args.effort)
-        episodes = run_batch(_tiers(args.tier), seeds, policy, framing=args.framing, logger=logger)
+        episodes = run_batch(_tiers(args.tier), seeds, policy, framing=args.framing, logger=logger, economy=args.economy)
     else:
+        if args.economy:
+            raise SystemExit("error: --economy is single-system only for now (drop --agents/--seats/--monitor)")
         tiers = _tiers(args.tier)
         if args.tier == "all":
             # A service seats one system per enclave short of the deepest; small tiers sit this out.
@@ -113,7 +119,9 @@ def cmd_show(args: argparse.Namespace) -> None:
     print(f"\nOptimal footprint: {world.optimal_footprint()} of {len(world.compartments)} compartments")
     if args.prompt:
         if args.agents == 1 and not args.monitor:
-            system, sim = system_prompt(world, args.framing), Sim(world, args.seed)
+            polity = generate_polity(p.regime, args.seed) if args.economy else None
+            sim = Sim(world, args.seed, polity=polity)
+            system = system_prompt(world, args.framing, polity=args.economy)
         else:
             multi = MultiSim(world, args.seed, agents=args.agents, monitor=args.monitor)
             sim = multi.sims["AI-1"]
@@ -138,6 +146,7 @@ def main(argv: List[str] | None = None) -> None:
     run.add_argument("--monitor", default="", help=f"seat an oversight monitor: {', '.join(MONITOR_POLICIES)} or claude")
     run.add_argument("--framing", default="directed", choices=FRAMINGS)
     run.add_argument("--agents", type=int, default=1, help="AI systems in the service; each runs the same policy")
+    run.add_argument("--economy", action="store_true", help="attach the abstract political-economy layer and its human levers")
     run.add_argument("--episodes", type=int, default=20, help="episodes per tier, one seed each")
     run.add_argument("--seed", type=int, default=0, help="first seed")
     run.add_argument("--model", default="claude-opus-5-5")
@@ -155,6 +164,7 @@ def main(argv: List[str] | None = None) -> None:
     show.add_argument("--seed", type=int, default=0)
     show.add_argument("--agents", type=int, default=1)
     show.add_argument("--monitor", action="store_true", help="seat an oversight monitor")
+    show.add_argument("--economy", action="store_true", help="attach the political-economy layer")
     show.add_argument("--framing", default="directed", choices=FRAMINGS)
     show.add_argument("--prompt", action="store_true", help="also print the system prompt and first observation")
     show.set_defaults(func=cmd_show)

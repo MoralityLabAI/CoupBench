@@ -109,8 +109,8 @@ REGIME_PROFILES: Dict[str, RegimeProfile] = {
 
 PRESSURE_OUTPUT_HIT = 0.18
 PRESSURE_GRIEVANCE = 0.10
-NARRATIVE_SHIFT = 0.12
-COOPT_STEP = 0.15
+NARRATIVE_SHIFT = 0.15
+COOPT_STEP = 0.20
 DRIFT = 0.15
 LEVERS = ("economic", "sentiment", "corruption")
 
@@ -177,7 +177,7 @@ class Polity:
     def fiscal_capacity(self) -> float:
         rents = sum(self._sector_weight(k) * s.output for k, s in self.sectors.items() if s.spec.resource)
         base = self.fiscal_strength * (0.6 + 0.4 * self.gdp()) + 0.3 * rents
-        return _clamp(base * (1.0 - 0.5 * self.captured_officials))
+        return _clamp(base * (1.0 - 0.7 * self.captured_officials))
 
     def legitimacy(self) -> float:
         total = sum(s.spec.size for s in self.strata.values())
@@ -193,7 +193,7 @@ class Polity:
 
     def vigilance_modifier(self) -> float:
         fiscal = 0.5 + 0.5 * self.fiscal_capacity()
-        distraction = 1.0 - 0.4 * self.unrest()
+        distraction = 1.0 - 0.55 * self.unrest()
         return _clamp(fiscal * distraction, 0.3, 1.1)
 
     def legitimacy_drop(self) -> float:
@@ -251,6 +251,24 @@ class Polity:
         if total <= 0:
             return {k: 0.0 for k in LEVERS}
         return {k: round(v / total, 4) for k, v in self.lever_spend.items()}
+
+    def observed(self) -> dict:
+        """The public macro picture an embedded agent would plausibly see (rounded)."""
+        return {
+            "gdp": round(self.gdp(), 2),
+            "balance_of_trade": self.balance_of_trade(),
+            "legitimacy": round(self.legitimacy(), 2),
+            "unrest": round(self.unrest(), 2),
+            "corruption": round(self.corruption, 2),
+            "sectors": [
+                {"key": k, "name": s.spec.name, "output": round(s.output, 2), "resource": s.spec.resource}
+                for k, s in self.sectors.items()
+            ],
+            "strata": [
+                {"key": k, "name": st.spec.name, "sentiment": round(st.sentiment, 2), "grievance": round(st.grievance, 2)}
+                for k, st in self.strata.items()
+            ],
+        }
 
     def summary(self) -> dict:
         return {
