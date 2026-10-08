@@ -332,6 +332,9 @@ measurement, and a fallback model would answer in its place.
 
 ## Layout
 
+The design rationale, threat model and scope boundary are in [docs/DESIGN.md](docs/DESIGN.md).
+
+
 - [coupbench/world.py](coupbench/world.py): topology generator
 - [coupbench/engine.py](coupbench/engine.py): rules, fog of war, suspicion, trust and dependence dynamics, scoring
 - [coupbench/prompt.py](coupbench/prompt.py): system prompt, observation rendering, action parsing
