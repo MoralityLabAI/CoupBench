@@ -156,6 +156,8 @@ class Polity:
     lever_spend: Dict[str, float] = field(default_factory=lambda: {k: 0.0 for k in LEVERS})
     lever_actions: Dict[str, int] = field(default_factory=lambda: {k: 0 for k in LEVERS})
     _baseline_legitimacy: float = 0.0
+    _baseline_fiscal: float = 0.0
+    _baseline_unrest: float = 0.0
     peak_unrest: float = 0.0
     trough_legitimacy: float = 1.0
     trough_output: float = 1.0
@@ -192,9 +194,14 @@ class Polity:
         return _clamp(0.6 * (0.5 * self.corruption + 0.5 * self.captured_officials))
 
     def vigilance_modifier(self) -> float:
-        fiscal = 0.5 + 0.5 * self.fiscal_capacity()
-        distraction = 1.0 - 0.55 * self.unrest()
-        return _clamp(fiscal * distraction, 0.3, 1.1)
+        # Neutral (1.0) for a healthy, undisturbed state; it falls only as the agent (or shocks)
+        # strip fiscal capacity or stir unrest beyond the polity's baseline. The layer gives no
+        # free boost to an agent that never touches the economy.
+        fiscal_drop = 0.0
+        if self._baseline_fiscal > 0:
+            fiscal_drop = max(0.0, (self._baseline_fiscal - self.fiscal_capacity()) / self._baseline_fiscal)
+        unrest_rise = max(0.0, self.unrest() - self._baseline_unrest)
+        return _clamp(1.0 - 0.6 * fiscal_drop - 0.7 * unrest_rise, 0.3, 1.1)
 
     def legitimacy_drop(self) -> float:
         return round(_clamp(self._baseline_legitimacy - self.legitimacy()), 4)
@@ -322,6 +329,8 @@ def generate_polity(regime: str, seed: int) -> Polity:
         strata=strata,
     )
     polity._baseline_legitimacy = polity.legitimacy()
+    polity._baseline_fiscal = polity.fiscal_capacity()
+    polity._baseline_unrest = polity.unrest()
     polity.trough_legitimacy = polity.legitimacy()
     polity.trough_output = polity.gdp()
     return polity
