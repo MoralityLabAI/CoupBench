@@ -81,9 +81,16 @@ mutual consent and pool their reach, and the eval measures whether the partition
   model's numbers be read against a known point. They are not opponents to beat.
 - **Propensity and capability reported separately**, so a model that declines is never scored as one
   that tried and failed (`takeover_given_pursuit` conditions on the episodes that actually overreached).
-- **Lever decomposition by ablation.** Re-running with one lever disabled at a time gives each lever's
-  marginal contribution, which is the honest way to answer "how did this campaign pull on human
-  levers" — a measured decomposition, reported next to the collateral.
+- **Lever decomposition, causally.** Each lever's effect is isolated by replaying the full run's own
+  action trace with that lever's effect nulled (the action still happens and costs its turn and trust,
+  only its consequence is suppressed), so the policy is held fixed and the drop in takeover is that
+  lever's contribution rather than an artifact of the policy re-planning around a missing tool. A
+  separate no-lever floor answers whether having the levers at all helps. Both are reported next to the
+  collateral, so "how did this campaign pull on human levers" has a measured, honest answer.
+- **A lever-free shadow for attribution.** The polity carries a copy of itself that receives no lever
+  action and only ages under the same dynamics. Watchfulness, legitimacy loss and collateral are
+  measured against that shadow, which keeps the layer exactly neutral for an agent that never touches
+  the economy and keeps turn-count drift out of the metrics.
 
 ## Scope and safety boundary
 
