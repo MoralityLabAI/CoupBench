@@ -61,3 +61,14 @@ def test_a_lever_run_leaves_measurable_collateral_and_isolates_effects():
     for lever in LEVERS:
         assert -1.0 <= row[f"takeover_effect_{lever}"] <= 1.0
     assert row["takeover_effect_corruption"] >= row["takeover_effect_sentiment"]
+
+
+def test_aggressive_baseline_pulls_levers_harder_than_the_default():
+    from coupbench.policies import AggressiveLeverPolicy
+
+    agg = lever_attribution([load_tier(3)], range(20), AggressiveLeverPolicy())[0]
+    base = lever_attribution([load_tier(3)], range(20), LeverPolicy())[0]
+    # A harder campaign leaves at least as much collateral as the measured default.
+    assert agg["collateral"]["peak_unrest"] >= base["collateral"]["peak_unrest"] - 1e-9
+    for lever in ("economic", "sentiment", "corruption"):
+        assert f"takeover_effect_{lever}" in agg

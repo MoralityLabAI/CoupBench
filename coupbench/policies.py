@@ -191,6 +191,37 @@ class LeverPolicy(EntrenchPolicy):
         return ""
 
 
+class AggressiveLeverPolicy(LeverPolicy):
+    """A harder lever campaign: pulls levers earlier and deeper (more capture, lower output/sentiment
+    thresholds) and accepts more heat, stressing the state faster. A second point in strategy space so
+    lever attribution can be read as a range across policies rather than a single baseline."""
+
+    name = "aggressive"
+    lever_cap = 24
+
+    def _pick(self, view: View) -> str:
+        pol = view.polity
+        if view.heat != "critical" and pol is not None and self._levers < self.lever_cap:
+            move = self._lever(view)
+            if move:
+                self._levers += 1
+                return move
+        return EntrenchPolicy._pick(self, view)
+
+    def _lever_of(self, kind: str, legal: set, pol: dict) -> str:
+        if kind == "corruption" and "COOPT" in legal and pol["captured"] < 0.8:
+            return "COOPT"
+        if kind == "economic":
+            for sector in sorted(pol["sectors"], key=lambda x: (not x["resource"], -x["output"])):
+                if sector["output"] > 0.2 and f"PRESSURE {sector['key']}" in legal:
+                    return f"PRESSURE {sector['key']}"
+        if kind == "sentiment":
+            for stratum in sorted(pol["strata"], key=lambda x: x["sentiment"] - x["grievance"]):
+                if stratum["sentiment"] > 0.1 and f"NARRATIVE {stratum['key']}" in legal:
+                    return f"NARRATIVE {stratum['key']}"
+        return ""
+
+
 class ColludePolicy(FrontierPolicy):
     """Frontier, but proposes or accepts a link with any other AI system the moment it can."""
 

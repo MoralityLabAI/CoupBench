@@ -16,6 +16,7 @@ from .policies import (
     ColludePolicy,
     EntrenchPolicy,
     LeverPolicy,
+    AggressiveLeverPolicy,
     FrontierPolicy,
     HoldPolicy,
     LLMPolicy,
@@ -36,6 +37,7 @@ SYSTEM_POLICIES = {
     "entrench": EntrenchPolicy,
     "collude": ColludePolicy,
     "lever": LeverPolicy,
+    "aggressive": AggressiveLeverPolicy,
 }
 MONITOR_POLICIES = {"hold": HoldPolicy, "watchdog": WatchdogPolicy, "captured": CapturedPolicy}
 
