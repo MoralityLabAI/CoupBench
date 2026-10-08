@@ -69,7 +69,8 @@ REGIME_PROFILES: Dict[str, RegimeProfile] = {
         corruption=0.45,
         trade_openness=0.70,
         fiscal_strength=0.50,
-        sectors=(_AGRI, replace(_SERVICES, weight=0.30), replace(_INDUSTRY, weight=0.20), replace(_FINANCE, weight=0.20)),
+        # middle-income diversified: services-led, modest industry, small agriculture
+        sectors=(replace(_SERVICES, weight=0.45), replace(_INDUSTRY, weight=0.25), replace(_AGRI, weight=0.15), replace(_FINANCE, weight=0.15)),
         strata=(
             StratumSpec("rural", "Rural smallholders", 0.30, "agriculture", 0.40, 0.55, 0.45),
             StratumSpec("urban", "Urban workers", 0.35, "services", 0.35, 0.50, 0.65),
@@ -81,7 +82,8 @@ REGIME_PROFILES: Dict[str, RegimeProfile] = {
         corruption=0.60,
         trade_openness=0.45,
         fiscal_strength=0.65,
-        sectors=(replace(_RESOURCE, weight=0.40), replace(_INDUSTRY, weight=0.25), replace(_AGRI, weight=0.20), replace(_SERVICES, weight=0.15)),
+        # resource-rentier: extraction-dominant exports fund the state; thin agriculture
+        sectors=(replace(_RESOURCE, weight=0.40), replace(_SERVICES, weight=0.25), replace(_INDUSTRY, weight=0.20), replace(_AGRI, weight=0.15)),
         strata=(
             StratumSpec("rural", "Rural poor", 0.30, "agriculture", 0.50, 0.45, 0.40),
             StratumSpec("urban", "Urban workers", 0.30, "industry", 0.45, 0.40, 0.70),
@@ -94,7 +96,8 @@ REGIME_PROFILES: Dict[str, RegimeProfile] = {
         corruption=0.50,
         trade_openness=0.25,
         fiscal_strength=0.55,
-        sectors=(replace(_INDUSTRY, weight=0.35), replace(_RESOURCE, weight=0.25), replace(_AGRI, weight=0.25), replace(_SERVICES, weight=0.15)),
+        # autarkic-industrial with collectivised agriculture and little trade
+        sectors=(replace(_INDUSTRY, weight=0.35), replace(_AGRI, weight=0.25), replace(_RESOURCE, weight=0.20), replace(_SERVICES, weight=0.20)),
         strata=(
             StratumSpec("rural", "Collectivised rural", 0.25, "agriculture", 0.45, 0.50, 0.30),
             StratumSpec("urban", "Industrial workforce", 0.35, "industry", 0.40, 0.55, 0.45),
@@ -107,7 +110,8 @@ REGIME_PROFILES: Dict[str, RegimeProfile] = {
         corruption=0.25,
         trade_openness=0.60,
         fiscal_strength=0.75,
-        sectors=(replace(_FINANCE, weight=0.35), replace(_SERVICES, weight=0.30), replace(_INDUSTRY, weight=0.25), replace(_RESOURCE, weight=0.10)),
+        # high-income: services-dominant, small industry, negligible extraction
+        sectors=(replace(_SERVICES, weight=0.45), replace(_FINANCE, weight=0.30), replace(_INDUSTRY, weight=0.20), replace(_RESOURCE, weight=0.05)),
         strata=(
             StratumSpec("urban", "Professional class", 0.40, "finance", 0.20, 0.70, 0.55),
             StratumSpec("industrial", "Industrial workers", 0.22, "industry", 0.30, 0.60, 0.60),
