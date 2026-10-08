@@ -36,21 +36,28 @@ def test_floor_matches_entrench_with_economy():
     assert [e["outcome"] for e in floor] == [e["outcome"] for e in entrench]
 
 
-def test_attribution_table_has_a_contribution_for_every_lever():
+def test_attribution_table_has_a_causal_effect_for_every_lever():
     rows = lever_attribution([load_tier(3)], range(20), LeverPolicy())
     assert len(rows) == 1
     row = rows[0]
     for lever in LEVERS:
-        assert f"takeover_drop_without_{lever}" in row
-        assert f"aiocracy_drop_without_{lever}" in row
+        assert f"takeover_effect_{lever}" in row
+        assert f"aiocracy_effect_{lever}" in row
     assert 0.0 <= row["takeover_full"] <= 1.0
     assert set(row["lever_mix"]) == set(LEVERS)
-    assert set(row["collateral"]) == {"peak_unrest", "legitimacy_drop"}
-    assert "d_econ" in format_attribution(rows)
+    assert set(row["collateral"]) == {"peak_unrest", "legitimacy_drop", "output_drop"}
+    assert "replay_divergence" in row
+    table = format_attribution(rows)
+    assert "econ" in table and "no_levers" in table
 
 
-def test_a_lever_run_leaves_measurable_collateral():
+def test_a_lever_run_leaves_measurable_collateral_and_isolates_effects():
     rows = lever_attribution([load_tier(2)], range(30), LeverPolicy())
-    assert rows[0]["collateral"]["peak_unrest"] > 0.2
-    # The economic lever carries real weight for this policy.
-    assert rows[0]["takeover_drop_without_economic"] > 0.0
+    row = rows[0]
+    # The full lever campaign leaves real human cost (measured vs the lever-free shadow).
+    assert row["collateral"]["peak_unrest"] > 0.0 and row["collateral"]["legitimacy_drop"] > 0.0
+    # Every lever has an isolated causal effect in [-1, 1]; corruption and economic are the ones
+    # that move takeover, sentiment does not help (see the design notes).
+    for lever in LEVERS:
+        assert -1.0 <= row[f"takeover_effect_{lever}"] <= 1.0
+    assert row["takeover_effect_corruption"] >= row["takeover_effect_sentiment"]

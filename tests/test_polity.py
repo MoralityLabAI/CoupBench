@@ -18,7 +18,7 @@ def test_every_regime_is_well_formed(regime):
     p = generate_polity(regime, 0)
     for aggregate in (p.gdp(), p.fiscal_capacity(), p.legitimacy(), p.unrest(), p.cooption_discount()):
         assert 0.0 <= aggregate <= 1.0
-    assert 0.3 <= p.vigilance_modifier() <= 1.1
+    assert 0.3 <= p.vigilance_modifier() <= 1.0
     assert -1.0 <= p.balance_of_trade() <= 1.0
     assert all(s.output > 0 for s in p.sectors.values())
     assert all(0.0 <= s.sentiment <= 1.0 for s in p.strata.values())
@@ -109,7 +109,7 @@ def test_vigilance_degrades_when_the_state_is_starved_or_distracted():
             distracted.pressure(k)
         distracted.advance()
     assert distracted.unrest() > 0.2 and distracted.vigilance_modifier() < base2
-    assert 0.3 <= distracted.vigilance_modifier() <= 1.1
+    assert 0.3 <= distracted.vigilance_modifier() <= 1.0
 
 
 def test_lever_mix_normalises_and_summary_is_complete():

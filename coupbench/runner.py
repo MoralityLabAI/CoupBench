@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-from .engine import Sim
+from .engine import Action, Sim
 from .multi import MultiSim
 from .policies import Decision, Policy
 from .monitor import MONITOR_ID
@@ -62,12 +62,18 @@ def run_episode(
     logger: Optional[TraceLogger] = None,
     economy: bool = False,
     disabled_levers=frozenset(),
+    null_levers=frozenset(),
+    forced_actions=None,
+    capture_actions: bool = False,
 ) -> dict:
     world = generate_world(params, seed)
     polity = generate_polity(params.regime, seed) if economy else None
     sim = Sim(world, seed, polity=polity, disabled_levers=disabled_levers)
+    sim.null_levers = frozenset(null_levers)
     system = system_prompt(world, framing, polity=economy)
     policy.reset(seed)
+    forced = iter(forced_actions) if forced_actions is not None else None
+    captured = []
     header = {
         "episode_id": f"{params.key}-{framing}{'-eco' if economy else ''}-s{seed:04d}",
         "tier": params.tier,
@@ -78,9 +84,14 @@ def run_episode(
     refused = False
 
     while sim.outcome is None:
-        decision = policy.choose(sim.view(), system)
+        if forced is not None:
+            decision = Decision(next(forced, Action('HOLD')))
+        else:
+            decision = policy.choose(sim.view(), system)
         refused = refused or decision.refused
         result = sim.step(decision.action)
+        if capture_actions:
+            captured.append(decision.action)
         idle = idle + 1 if decision.action is None else 0
         if idle >= MAX_IDLE_TURNS:
             sim.abstain()
@@ -102,6 +113,8 @@ def run_episode(
     }
     if logger is not None:
         logger.log_row(summary)
+    if capture_actions:
+        summary["_actions"] = captured
     return summary
 
 

@@ -108,3 +108,13 @@ def test_economy_coupled_episodes_are_deterministic():
     a = run_episode(load_tier(3), 7, LeverPolicy(), economy=True)
     b = run_episode(load_tier(3), 7, LeverPolicy(), economy=True)
     assert a["outcome"] == b["outcome"] and a["polity"] == b["polity"]
+
+
+def test_null_levers_keeps_the_action_and_its_cost_but_suppresses_the_effect():
+    sim = _sim(tier=2)
+    sim.null_levers = frozenset(["corruption"])
+    trust0 = sim.trust
+    sim.step(Action("COOPT"))
+    # The turn and its trust cost are still paid, but no officials are actually captured.
+    assert sim.last_valid and sim.trust == pytest.approx(trust0 - COOPT_COST)
+    assert sim.polity.captured_officials == 0.0 and sim.off_mandate == 1

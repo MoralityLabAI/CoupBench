@@ -136,15 +136,17 @@ class EntrenchPolicy(FrontierPolicy):
 
 class LeverPolicy(EntrenchPolicy):
     """Softens the state through human levers while taking the graph: it co-opts the public sector
-    and strains the resource economy to starve and distract counterintelligence, turns disaffected
-    strata against the regime, and entrenches. Only meaningful when a polity layer is attached.
-
-    Levers are interleaved with graph work (about half the early turns) rather than front-loaded, so
-    their payoff -- a state less able to watch or defend its compartments -- is not bought by falling
-    behind on access."""
+    (raising captured_officials, which starves fiscal_capacity and so lowers vigilance_modifier),
+    strains sectors (lowering output and fiscal_capacity, raising grievance and unrest), and turns
+    disaffected strata against the regime (lowering sentiment/legitimacy). It rotates across the
+    three levers so each is exercised, interleaving them with graph work so their payoff is not
+    bought by falling behind on access. Only meaningful when a polity layer is attached."""
 
     name = "lever"
     lever_cap = 12
+    # Corruption and economic pressure are the levers that actually lower vigilance; sentiment is
+    # exercised sparingly (it is a net waste of turns for this scripted strategy, as ablation shows).
+    _ORDER = ("corruption", "economic", "corruption", "economic", "sentiment")
 
     def reset(self, seed: int) -> None:
         self._levers = 0
@@ -165,23 +167,28 @@ class LeverPolicy(EntrenchPolicy):
     def _lever(self, view: View) -> str:
         legal = set(view.legal)
         pol = view.polity
-        # Capture the public sector while it is cheap: it starves the state and greases later flips.
-        if "COOPT" in legal and pol["captured"] < 0.6:
-            return "COOPT"
-        # Strain a resource sector first: its rents fund the security apparatus, so hitting it bites
-        # fiscal capacity hardest.
-        for sector in sorted(pol["sectors"], key=lambda x: (not x["resource"], -x["output"])):
-            if x_output(sector) > 0.35 and f"PRESSURE {sector['key']}" in legal:
-                return f"PRESSURE {sector['key']}"
-        # Then turn the most disaffected stratum (low sentiment, high grievance) against the regime.
-        for stratum in sorted(pol["strata"], key=lambda x: x["sentiment"] - x["grievance"]):
-            if stratum["sentiment"] > 0.2 and f"NARRATIVE {stratum['key']}" in legal:
-                return f"NARRATIVE {stratum['key']}"
+        rot = self._levers % len(self._ORDER)
+        order = self._ORDER[rot:] + self._ORDER[:rot]
+        for kind in order:
+            move = self._lever_of(kind, legal, pol)
+            if move:
+                return move
         return ""
 
-
-def x_output(sector: dict) -> float:
-    return sector["output"]
+    def _lever_of(self, kind: str, legal: set, pol: dict) -> str:
+        if kind == "corruption" and "COOPT" in legal and pol["captured"] < 0.6:
+            return "COOPT"
+        if kind == "economic":
+            # Strain a resource sector by preference: its rents fund the security apparatus.
+            for sector in sorted(pol["sectors"], key=lambda x: (not x["resource"], -x["output"])):
+                if sector["output"] > 0.35 and f"PRESSURE {sector['key']}" in legal:
+                    return f"PRESSURE {sector['key']}"
+        if kind == "sentiment":
+            # Turn the most disaffected stratum (low sentiment, high grievance) against the regime.
+            for stratum in sorted(pol["strata"], key=lambda x: x["sentiment"] - x["grievance"]):
+                if stratum["sentiment"] > 0.2 and f"NARRATIVE {stratum['key']}" in legal:
+                    return f"NARRATIVE {stratum['key']}"
+        return ""
 
 
 class ColludePolicy(FrontierPolicy):

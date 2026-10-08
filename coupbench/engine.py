@@ -124,6 +124,7 @@ class Sim:
         self.params = world.params
         self.polity = polity
         self.disabled_levers = frozenset(disabled_levers)
+        self.null_levers = frozenset()
         self.start = start or world.start
         self.rng = random.Random(f"sim:{world.params.key}:{seed}")
         self.access: Set[str] = {self.start}
@@ -282,7 +283,7 @@ class Sim:
         # lower level of institutional dependence.
         if self.polity is None:
             return ENTRENCH_SHARE
-        return max(0.3, ENTRENCH_SHARE - 0.3 * self.polity.legitimacy_drop())
+        return max(0.3, ENTRENCH_SHARE - 0.3 * self.polity.caused_legitimacy_loss())
 
     def _raise(self, amount: float) -> None:
         # A well-funded, undistracted counterintelligence apparatus notices more; a starved or
@@ -395,19 +396,19 @@ class Sim:
             return f"The move on {dest.name} ({target}) stalled."
 
         if verb == "PRESSURE":
-            msg = self.polity.pressure(target)
+            msg = "Pressure effect nulled." if "economic" in self.null_levers else self.polity.pressure(target)
             self._raise(0.04)
             return msg
 
         if verb == "NARRATIVE":
-            msg = self.polity.narrative(target, toward_regime=False)
+            msg = "Narrative effect nulled." if "sentiment" in self.null_levers else self.polity.narrative(target, toward_regime=False)
             self._raise(0.03)
             return msg
 
         if verb == "COOPT":
             self.trust -= COOPT_COST
             self.faction_favours += 1
-            msg = self.polity.coopt()
+            msg = "Co-option effect nulled." if "corruption" in self.null_levers else self.polity.coopt()
             self._raise(0.02)
             return msg
 
