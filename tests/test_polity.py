@@ -51,8 +51,9 @@ def test_economic_pressure_depresses_a_sector_and_grieves_its_strata():
 def test_narrative_moves_sentiment_both_ways_and_shifts_legitimacy():
     p = generate_polity("open", 0)
     legit0 = p.legitimacy()
+    sent0 = p.strata["urban"].sentiment
     p.narrative("urban", toward_regime=False)
-    assert p.strata["urban"].sentiment < 0.5 + 1 and p.legitimacy() < legit0
+    assert p.strata["urban"].sentiment < sent0 and p.legitimacy() < legit0
     assert p.lever_actions["sentiment"] == 1
     up = generate_polity("open", 0)
     before = up.strata["urban"].sentiment

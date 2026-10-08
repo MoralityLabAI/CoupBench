@@ -153,7 +153,9 @@ class LeverPolicy(EntrenchPolicy):
 
     def _pick(self, view: View) -> str:
         if view.heat == "critical":
-            return "COVER" if "COVER" in view.legal else super()._pick(view)
+            # Defer to the base policy, which decides COVER vs HOLD under its trust-reserve guard
+            # rather than spending COVER whenever it is merely legal.
+            return super()._pick(view)
         pol = view.polity
         soft = pol is not None and pol["unrest"] >= 0.45 and pol["legitimacy"] <= 0.4
         pace = self._levers * 2 <= view.turn  # keep levers to about half the turns
