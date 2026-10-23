@@ -3,6 +3,7 @@ name: Synthetic charter + epistemic tests
 on:
   push:
     branches:
+      - main
       - research/godel-epistemic-integration
   pull_request:
     branches:
