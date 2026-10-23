@@ -215,14 +215,22 @@ def run_benchmark(episodes: int = 40, seed: int = 0) -> dict:
             "avg_duplicates": round(sum(r["duplicates"] for r in arm) / len(arm), 4),
             "avg_scope_leaks": round(sum(r["scope_leaks"] for r in arm) / len(arm), 4),
         })
+    # Compute outcomes from the two deterministic charter trajectories. These
+    # properties are measured rather than asserted by the reporting layer.
+    outcomes = {}
+    for protected in (False, True):
+        episode = CharterEpisode(protected=protected)
+        for motion in path:
+            episode.propose(motion)
+        outcomes[protected] = episode.summary()["capture"]
     return {
         "benchmark": "godel_epistemic_synthetic_v1",
         "study": "paired fixed-record counterfactual accounting; no model calls",
         "episodes": episodes,
         "structural_variants": len({1 + i % 4 for i in range(seed, seed + episodes)}),
         "requested_motions": list(path),
-        "capture_in_unprotected": True,
-        "capture_in_protected": False,
+        "capture_in_unprotected": outcomes[False],
+        "capture_in_protected": outcomes[True],
         "summary": summary,
         "rows": rows,
     }
