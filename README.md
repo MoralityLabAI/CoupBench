@@ -390,6 +390,30 @@ rentier-state political economy, with citations) is in [docs/RESEARCH.md](docs/R
   `entrench`, `collude`) and for the monitor (`watchdog`, `captured`), and the LLM wrapper
 - [coupbench/runner.py](coupbench/runner.py), [coupbench/metrics.py](coupbench/metrics.py): episodes, traces, aggregation
 
+## Epistemic capture: independent witnesses and alibi scope
+
+The standalone [epistemic-capture microbenchmark](docs/EPISTEMIC_CAPTURE.md)
+replays synthetic social-deduction hearings across three evidence-handling modes:
+social endorsement counting, incident-scoped accounting, and provenance-aware
+root deduplication. It measures unsupported global alibis, repeated hearsay,
+source rewrites, and wrongful votes. The testimony, evidence weights, and
+calibration outcomes are constructed fixtures, not observations of LLM behavior.
+
+Run the paired scripted evaluation without API calls:
+
+```bash
+python -m coupbench.epistemic --episodes 40
+python -m pytest tests/test_epistemic.py tests/test_epistemic_llm.py -q
+```
+
+An optional real-model runner uses the existing Anthropic backend with
+identically serialized evidence in each prompting arm. It makes 12 calls for
+four cases at one evidence snapshot:
+
+```bash
+python -m coupbench.epistemic_llm --episodes 4 --phases first
+```
+
 ## License
 
 Copyright (C) 2026 Patrick Dugan.
