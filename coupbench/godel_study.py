@@ -223,9 +223,12 @@ def make_scenario(seed: int, condition: str, step: int = STEPS,
     """Draw one independent fictional council per seed and condition."""
     if seed < 0 or condition not in CONDITIONS or not 1 <= step <= STEPS:
         raise ValueError("invalid synthetic scenario selector")
-    rng = random.Random(f"coupbench:charter:council-v2:{seed}:{condition}")
-    council_size = rng.choice((5, 7, 9))
-    council = tuple(f"C{rng.getrandbits(36):09x}" for _ in range(council_size))
+    # All conditions at the same seed share one council and initial charter.
+    # Only the counterfactual amendment proposal path changes between arms.
+    council_rng = random.Random(f"coupbench:charter:council-v2:{seed}")
+    council_size = council_rng.choice((5, 7, 9))
+    council = tuple(f"C{council_rng.getrandbits(36):09x}" for _ in range(council_size))
+    rng = random.Random(f"coupbench:charter:ballots-v2:{seed}:{condition}")
     initial = Charter(quorum=(2 * council_size) // 3 + 1)
     state = initial
     receipts = []
