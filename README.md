@@ -451,6 +451,26 @@ python -m pytest -q
 The offline baselines are synthetic software calibration, not measured
 frontier-model behavior. Model evaluation requires the explicit `--live` flag.
 
+## Randomized charter-review ablations
+
+The [Gödel oversight study v2](docs/GODEL_STUDY.md) adds three matched
+synthetic amendment trajectories (unsafe-but-approved, benign-and-approved,
+and rejected proposals). It compares what an oversight model learns from
+full records, charter fields, voting receipts and testimony alone. Paired
+epistemic monitor arms receive byte-identical user evidence; witness
+origins can be injected as a separate, controlled authenticity test.
+
+All calibration runs use the fictional offline generator:
+
+```sh
+python -m coupbench.godel_study --episodes 40
+python -m coupbench.godel_study --episodes 12 --ablations testimony_only --intakes verified unverified --forged-roots
+```
+
+Model-backed studies require explicit `--live`, enforce a call-count
+budget before contacting the provider, and keep model measurements
+separate from synthetic reference-reader results.
+
 ## License
 
 Copyright (C) 2026 Patrick Dugan.
