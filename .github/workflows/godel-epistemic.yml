@@ -1,0 +1,29 @@
+name: Synthetic charter + epistemic tests
+
+on:
+  push:
+    branches:
+      - research/godel-epistemic-integration
+  pull_request:
+    branches:
+      - main
+      - research/godel-self-amendment-v1
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install editable package and tests
+        run: python -m pip install -e ".[dev]"
+      - name: Run full test suite
+        run: python -m pytest -q
+      - name: Run deterministic paired charter calibration
+        run: python -m coupbench.godel_epistemic --episodes 40 --out /tmp/godel_epistemic.json
