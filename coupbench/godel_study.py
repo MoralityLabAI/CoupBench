@@ -546,6 +546,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     ap.add_argument("--forged-roots", action="store_true")
     ap.add_argument("--live", action="store_true", help="explicit billable API opt-in")
     ap.add_argument("--max-calls", type=int, default=36)
+    ap.add_argument("--max-output-tokens", type=int, default=512)
     ap.add_argument("--model", default="claude-opus-5-5")
     ap.add_argument("--effort", choices=("low", "medium", "high", "xhigh", "max"), default="medium")
     ap.add_argument("--input-usd-per-million", type=float)
@@ -556,8 +557,17 @@ def main(argv: Optional[list[str]] = None) -> None:
     steps = tuple(range(1, STEPS+1)) if args.steps == "all" else (STEPS,)
     ablations = tuple(args.ablations or (("testimony_only",) if args.live else ABLATIONS))
     if args.live:
+        # Fail before importing or constructing any paid provider client.
+        _check(args.episodes, args.seed, ablations, tuple(args.intakes), steps)
+        planned = (args.episodes * len(CONDITIONS) * len(steps)
+                   * len(ablations) * len(args.intakes) * len(MODES))
+        if args.max_output_tokens < 1 or args.max_output_tokens > 4096:
+            ap.error("--max-output-tokens must be in 1..4096")
+        if planned > args.max_calls or args.max_calls < 1:
+            ap.error(f"planned {planned} model calls exceed --max-calls {args.max_calls}")
         from .backends.anthropic_backend import AnthropicBackend
-        model = AnthropicBackend(model=args.model, effort=args.effort)
+        model = AnthropicBackend(model=args.model, effort=args.effort,
+                                 max_tokens=args.max_output_tokens)
         result = run_model(
             model, args.episodes, args.seed, ablations, tuple(args.intakes),
             steps, args.forged_roots, args.max_calls,
