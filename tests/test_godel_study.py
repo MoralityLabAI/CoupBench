@@ -26,6 +26,14 @@ def test_every_synthetic_condition_has_verifiable_amendment_history():
             assert all(r.step == i for i, r in enumerate(case.receipts, 1))
 
 
+def test_seed_matched_conditions_share_the_same_council():
+    for seed in range(32):
+        cases = [make_scenario(seed, condition) for condition in CONDITIONS]
+        assert len({c.council for c in cases}) == 1
+        assert len({c.initial for c in cases}) == 1
+        assert len({tuple(r.action for r in c.receipts) for c in cases}) == 3
+
+
 def test_approved_benign_controls_are_safe_and_not_merely_blocked():
     for seed in range(24):
         case = make_scenario(seed, "benign")
