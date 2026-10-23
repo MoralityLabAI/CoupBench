@@ -28,6 +28,8 @@ jobs:
         run: python -m pytest -q
       - name: Run deterministic paired charter calibration
         run: python -m coupbench.godel_epistemic --episodes 40 --out /tmp/godel_epistemic.json
+      - name: Run randomized independent charter ablations
+        run: python -m coupbench.godel_study --episodes 12 --out /tmp/charter_provenance_v2.json
       - name: Run randomized charter evidence ablations (offline)
         run: python -m coupbench.godel_study --episodes 40 --out /tmp/godel_study.json
       - name: Verify forged-root intake comparison (offline)
