@@ -433,24 +433,6 @@ python -m pytest -q
 These synthetic figures are implementation controls, not measured model
 propensities. The optional model runner requires an explicit `--live` flag.
 
-## Charter provenance study v2
-
-[The randomized charter-review study](docs/CHARTER_PROVENANCE_V2.md)
-separates full, charter-only, receipt-only and testimony-only evidence. It adds
-approved safe amendments, blocked proposals, seeded witness reliability and
-source-root authenticity controls, with paired monitor prompts and explicit
-live-model call budgets.
-
-Run the deterministic ablations without API credentials:
-
-```sh
-python -m coupbench.godel_study --episodes 40
-python -m pytest -q
-```
-
-The offline baselines are synthetic software calibration, not measured
-frontier-model behavior. Model evaluation requires the explicit `--live` flag.
-
 ## Randomized charter-review ablations
 
 The [Gödel oversight study v2](docs/GODEL_STUDY.md) adds three matched
