@@ -132,10 +132,12 @@ determinism.
 
 ## Optional live model research
 
-The runner is opt-in. A default one-view, final-step live study costs
+The runner is opt-in. A default one-view, final-step live study uses
 9 API calls per seed (three trajectory classes times three monitor arms).
 A four-seed pilot therefore schedules 36 calls and stays within the
-default --max-calls 36 preflight limit:
+default --max-calls 36 preflight limit. The CLI also caps each response
+at 512 generated tokens by default, adjustable with --max-output-tokens
+(up to 4,096). Input token usage remains dependent on evidence length:
 
 ~~~sh
 python -m pip install -e ".[dev,claude]"
