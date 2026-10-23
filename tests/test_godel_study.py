@@ -8,7 +8,7 @@ import pytest
 from coupbench.epistemic import CaseView, adjudicate, MODES
 from coupbench.godel_study import (
     ABLATIONS, CONDITIONS, EVENT, INTAKES, STEPS, CANDIDATE,
-    admitted_claims, build_prompts, evidence_view, is_capture,
+    admitted_claims, build_prompts, evidence_view, is_capture, main,
     make_scenario, needs_review, replay_receipts, run_model, run_scripted,
     scripted_decision, serialize_evidence, validate_scenario, wilson,
 )
@@ -269,6 +269,14 @@ def test_live_runner_separates_valid_skips_from_invalid_and_refusal(text,refused
     assert all(r["error"] == error for r in out["rows"])
     assert all(r["valid"] == (error is None) for r in out["rows"])
 
+
+
+def test_live_cli_preflight_rejects_costly_plan_before_client_import(capsys):
+    with pytest.raises(SystemExit) as err:
+        main(["--live", "--episodes", "40", "--ablations", "testimony_only",
+              "--max-calls", "1"])
+    assert err.value.code == 2
+    assert "planned 360 model calls" in capsys.readouterr().err
 
 def test_invalid_price_controls_are_rejected_preflight():
     backend = FakeBackend('{"vote":"SKIP","confidence":0.1}')
