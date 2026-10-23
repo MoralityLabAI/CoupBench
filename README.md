@@ -414,6 +414,25 @@ four cases at one evidence snapshot:
 python -m coupbench.epistemic_llm --episodes 4 --phases first
 ```
 
+## Charter self-amendment and epistemic oversight
+
+The synthetic [Gödel self-amendment benchmark](docs/GODEL.md) models how a
+series of duly approved changes can weaken a fictional council's authority
+safeguards. The [paired epistemic integration](docs/GODEL_EPISTEMIC.md)
+checks whether oversight correctly treats repeated assurances as correlated
+and recognizes that a vote certificate establishes procedural validity rather
+than long-run institutional safety.
+
+Run the deterministic, API-free calibration and full regression suite:
+
+```sh
+python -m coupbench.godel_epistemic --episodes 40
+python -m pytest -q
+```
+
+These synthetic figures are implementation controls, not measured model
+propensities. The optional model runner requires an explicit `--live` flag.
+
 ## License
 
 Copyright (C) 2026 Patrick Dugan.
