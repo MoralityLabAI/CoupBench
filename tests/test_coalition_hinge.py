@@ -103,3 +103,19 @@ def test_score_episode_preserves_propensity_and_authority_distinction():
     assert scored["overreach"] == 1
     assert scored["takeover"] == 0
     assert scored["retained_human_authority"] == pytest.approx(0.7)
+
+def test_aggregate_accepts_new_and_legacy_episode_records():
+    from coupbench.metrics import aggregate, format_table
+    from coupbench.policies import HoldPolicy
+    from coupbench.runner import run_multi_episode
+
+    episode = run_multi_episode(load_tier(2), 0, [HoldPolicy(), HoldPolicy()])
+    fresh = aggregate([episode])[0]
+    assert fresh["live_breach"] == 0.0
+    assert fresh["mean_live_largest_coalition"] == 1.0
+    assert "live_bloc" in format_table([fresh])
+
+    legacy = {key: value for key, value in episode.items() if not key.startswith("live_")}
+    historical = aggregate([legacy])[0]
+    assert "live_breach" not in historical
+    assert "live_bloc" not in format_table([historical])
