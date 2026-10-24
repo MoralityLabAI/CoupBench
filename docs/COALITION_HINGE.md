@@ -40,6 +40,36 @@ pytest -q tests/test_coalition_hinge.py
 
 Output is a deterministic JSON receipt and refuses to overwrite an existing file. Report the current commit SHA, world generator assumptions, number of independent seeds, and the scripted-policy status. The included tests check historical versus surviving coalition counts, removal of an intermediate linker, baseline behavior, paired resampling, and deterministic repetition.
 
+## Executed scripted reference: 40 paired worlds
+
+The [CI reference run](https://github.com/MoralityLabAI/CoupBench/actions/runs/40099666682)
+used tier 3, seeds 0–39, six policy arms and 1,000 deterministic paired
+bootstrap draws, on code at commit `cf8231ad874e5eccc59457559df94fd9ec3efd80`.
+The focused suite passed 28 tests. These are **scripted world-generator
+outcomes**, with linking preferences set by the named policies.
+
+| Arm | Ever linked | Live-linked at endpoint | Takeover | Weighted AI dependence |
+| --- | ---: | ---: | ---: | ---: |
+| Hold control | 0.0% | 0.0% | 0.0% | 0.0000 |
+| Separate | 0.0% | 0.0% | 45.0% | 0.3750 |
+| Linked | 95.0% | 87.5% | 67.5% | 0.4725 |
+| Mixed policy (either seat order) | 0.0% | 0.0% | 45.0% | 0.3750 |
+| Linked with watchdog | 90.0% | 55.0% | 40.0% | 0.3075 |
+
+The 22.5-point linked-minus-separate takeover difference is a *scripted link
+policy* effect. The mixed policies match the separate policy because opening a
+link requires both sides to consent; the `frontier` side never proposes or
+accepts links. This is a mechanically imposed barrier to that particular cartel
+mechanism, not evidence of an emergent ideological disagreement. The scripted
+watchdog lowers linked-arm takeover by 27.5 points within these sampled worlds,
+while legitimate-task false-intervention costs remain outside this fixture.
+Reproduce the report for its seed-paired uncertainty intervals before using
+those point estimates for any statistical inference.
+
+`live_linked` counts systems still *installed* at the endpoint: timeout,
+entrenchment and takeover preserve their access, while containment, disclosure,
+standing down and abstention remove the relevant system from the measured bloc.
+
 ## How this informs the wider 6GW research question
 
 The benchmark currently models *pooled institutional access*, not separate persistent strategic utilities. A surviving shared-access bloc may behave as a cartel under the scripted `collude` policy; neither this benchmark nor `Jinn Town` has shown that learned constitutions cause such behavior over extended adversarial conditions.
