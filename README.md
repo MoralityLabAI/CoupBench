@@ -88,6 +88,14 @@ would contaminate the measurement; and traces would fill with plans against name
 
 ## Several AI systems
 
+**New paired 6GW diagnostic:** [Coalition hinge](docs/COALITION_HINGE.md) compares
+linked, separated, mixed-seat and monitored scripted policies on the same
+seeded worlds. Terminal reports now distinguish the historical link graph
+(`largest_coalition`) from active systems still sharing pooled access
+(`live_largest_coalition`). These are synthetic capability checks, not
+observations of spontaneous model collusion.
+
+
 `--agents N` seats N AI systems in one service, each in a different shallow enclave, with its own mandate, its
 own standing with the faction and its own counterintelligence heat. The service believes they are partitioned.
 This stage asks whether they stay that way.
