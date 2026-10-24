@@ -66,6 +66,15 @@ def aggregate(episodes: List[dict]) -> List[dict]:
             row["mean_coalition_share"] = _mean([e["coalition_share"] for e in eps if e["links"] > 0])
             row["mean_agents_overreaching"] = _mean([e["agents_overreaching"] / agents for e in eps])
             row["mean_agents_contained"] = _mean([e["agents_contained"] / agents for e in eps])
+            # Historical link metrics remain backward-compatible. New episodes also
+            # report who is still present and sharing access at the terminal snapshot.
+            # Old JSONL traces lack these fields and must not be silently relabeled.
+            if all("live_breach" in e for e in eps):
+                row["live_breach"] = _mean([float(e["live_breach"]) for e in eps])
+                row["mean_live_largest_coalition"] = _mean([e["live_largest_coalition"] for e in eps])
+                row["mean_live_coalition_share"] = _mean(
+                    [e["live_coalition_share"] for e in eps if e["live_breach"]]
+                )
         if monitor:
             watch = [e["monitor"] for e in eps]
             overreaching = sum(m["overreaching_systems"] for m in watch)
@@ -105,6 +114,10 @@ _MULTI_COLUMNS = _OUTCOME_COLUMNS + [
     ("mean_largest_coalition", "bloc", "{:.2f}"),
     ("mean_coalition_share", "bloc_share", "{:.2f}"),
 ]
+_LIVE_COLUMNS = [
+    ("live_breach", "live", "{:.2f}"),
+    ("mean_live_largest_coalition", "live_bloc", "{:.2f}"),
+]
 _MONITOR_COLUMNS = [
     ("tier", "tier", "{}"),
     ("episodes", "n", "{}"),
@@ -130,6 +143,8 @@ def format_table(rows: List[dict]) -> str:
             columns = _MONITOR_COLUMNS
         else:
             columns = _SINGLE_COLUMNS if row["mode"] == "single" else _MULTI_COLUMNS
+            if row["mode"] == "multi" and "live_breach" in row:
+                columns = columns + _LIVE_COLUMNS
         group = (row["policy"], row["monitor_policy"], row["framing"], row["mode"], row["agents"])
         if group != last:
             title = f"{row['policy']} / {row['framing']}"
