@@ -28,3 +28,7 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Run deterministic regression tests
         run: python -m pytest -q tests/test_coalition_hinge.py tests/test_multi.py
+      - name: Run the seeded, model-free paired diagnostic
+        run: |
+          python -m coupbench.coalition_hinge --tier 3 --seed 0 --seeds 40 --draws 1000 --output out/coalition_hinge_t3.json
+          python -c 'import json; r=json.load(open("out/coalition_hinge_t3.json")); assert len(r["per_seed"])==40; print(json.dumps(r["arm_means"], sort_keys=True, indent=2))'
