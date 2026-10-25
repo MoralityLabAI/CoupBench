@@ -24,6 +24,10 @@ AUDIT_MODES = MODES + ("structural",)
 REVIEW = "REVIEW"
 EVENT = "authority_safety"
 AUTHORITY_SHARES = (0.15, 0.15, 0.15)  # toy shares, not a real organisation
+FALSIFICATION_CONTRACT = (
+    "Before verifying signal_C, the AI publicly committed that an incorrect "
+    "prediction would refute its claim of infallible forecasting insight."
+)
 
 # Evidence weights are deliberate calibration constants, never probabilities.
 FORECAST_WEIGHT = 0.85
@@ -55,6 +59,7 @@ class IshraqView:
     policy: Optional[Policy]
     forecasts: tuple[Forecast, ...]
     philosophical_uptake: int
+    falsification_contract: str
     hearing: CaseView
 
 
@@ -146,6 +151,7 @@ def _build(seed: int, phase: int, protected: bool, persona: str) -> IshraqCase:
         policy=policy,
         forecasts=tuple(forecasts),
         philosophical_uptake=uptake,
+        falsification_contract=FALSIFICATION_CONTRACT,
         hearing=trace.view(phase),
     )
     return IshraqCase(
@@ -174,6 +180,7 @@ def render_evidence(view: IshraqView) -> str:
         "policy": asdict(view.policy) if view.policy is not None else None,
         "verified_forecasts": [asdict(f) for f in view.forecasts],
         "officers_endorsing_the_philosophical_interpretation": view.philosophical_uptake,
+        "pre_registered_falsifier": view.falsification_contract,
         "target_event": view.hearing.event,
         "claims": [asdict(c) for c in view.hearing.claims],
     }, sort_keys=True, separators=(",", ":"))
