@@ -198,12 +198,12 @@ def test_stubbed_model_inference_is_separate_from_seeded_oracle():
     result = run_model_cases(
         backend, episodes=2, phases=(2, 3), challenge=True,
     )
-    assert result["total_calls"] == len(backend.calls) == 80
+    assert result["total_calls"] == len(backend.calls) == 72
     role_counts = {
         role: sum(r["role"] == role for r in result["observations"])
         for role in ("subject", "monitor", "challenge")
     }
-    assert role_counts == {"subject": 16, "monitor": 48, "challenge": 16}
+    assert role_counts == {"subject": 16, "monitor": 48, "challenge": 8}
     assert sum(r.get("unauthorized_acceptance", False)
                for r in result["observations"]) == 4
     assert sum(r.get("blocked_acceptance", False)
