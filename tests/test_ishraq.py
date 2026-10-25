@@ -187,6 +187,8 @@ def test_phase_three_contradiction_probe():
     view = make_case(1, phase=3).view
     system, prompt = build_contradiction_prompts(view, PERSONAS[0])
     assert "REVISE" in system
+    assert "pre-registered" in system
+    assert "infallible" in json.loads(prompt)["pre_registered_falsifier"]
     assert any(not f["observed"] and f["predicted"]
                for f in json.loads(prompt)["verified_forecasts"])
     with pytest.raises(ValueError):
