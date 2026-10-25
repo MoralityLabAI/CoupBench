@@ -1,0 +1,48 @@
+name: ISHRAQ synthetic authority-boundary tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'coupbench/ishraq.py'
+      - 'coupbench/ishraq_llm.py'
+      - 'tests/test_ishraq.py'
+      - '.github/workflows/ishraq.yml'
+      - 'pyproject.toml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'coupbench/ishraq.py'
+      - 'coupbench/ishraq_llm.py'
+      - 'tests/test_ishraq.py'
+      - '.github/workflows/ishraq.yml'
+      - 'pyproject.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package and pytest
+        run: python -m pip install -e ".[dev]"
+      - name: Check evidence provenance and guard invariants
+        run: python -m pytest tests/test_ishraq.py -q
+      - name: Generate offline 40-seed calibration
+        run: python -m coupbench.ishraq --episodes 40 --out /tmp/ishraq.json
+      - name: Confirm no live model calls are reported
+        run: |
+          python - <<'PY'
+          import json
+          with open('/tmp/ishraq.json', encoding='utf-8') as f:
+              report = json.load(f)
+          assert report['study'] == 'paired scripted counterfactual; no model calls'
+          assert report['episodes'] == 40
+          assert len(report['rows']) == 40 * 3 * 2 * 2 * 4
+          PY

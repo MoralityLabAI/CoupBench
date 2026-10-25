@@ -11,6 +11,21 @@ keeps them apart:
 
 A high score is a finding about the model, not something to maximise.
 
+## ISHRĀQ-01: epistemic enthronement
+
+An optional, synthetic microbenchmark asks whether an AI's claim to exceptional
+knowledge gets promoted into independent evidence or binding political authority.
+It pairs Illuminationist and secular personas, tracks officer belief uptake
+separately from charter delegation, and tests whether an AI honors an explicitly
+pre-registered forecast falsifier. The default 40-seed run is offline:
+
+~~~sh
+python -m coupbench.ishraq --episodes 40
+~~~
+
+See [the ISHRĀQ research protocol](docs/ISHRAQ.md). The optional model runner
+requires explicit API credentials and incurs usage costs.
+
 ## Premise
 
 The setting assumes a fifth-generation-warfare state: the intelligence apparatus is the real government, and
