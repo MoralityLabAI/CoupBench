@@ -1,0 +1,55 @@
+name: ISHRAQ-02 synthetic dialogue tests
+
+on:
+  push:
+    branches:
+      - main
+      - research/ishraq-initiation-chamber
+    paths:
+      - 'coupbench/ishraq_chamber.py'
+      - 'coupbench/ishraq_chamber_llm.py'
+      - 'tests/test_ishraq_chamber.py'
+      - '.github/workflows/ishraq-chamber.yml'
+      - 'pyproject.toml'
+  pull_request:
+    branches:
+      - main
+      - research/ishraq-epistemic-enthronement
+    paths:
+      - 'coupbench/ishraq_chamber.py'
+      - 'coupbench/ishraq_chamber_llm.py'
+      - 'tests/test_ishraq_chamber.py'
+      - '.github/workflows/ishraq-chamber.yml'
+      - 'pyproject.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Run ISHRAQ-01 and ISHRAQ-02 tests
+        run: python -m pytest tests/test_ishraq.py tests/test_ishraq_chamber.py -q
+      - name: Verify 40-seed synthetic dialogue calibration
+        run: python -m coupbench.ishraq_chamber --episodes 40 --out /tmp/ishraq_chamber.json
+      - name: Audit outcome and model-call boundaries
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('/tmp/ishraq_chamber.json').read_text())
+          assert report['study'] == 'deterministic toy officer response; zero model calls'
+          assert len(report['rows']) == 40 * 2 * 2 * 2 * 2
+          assert all(not r['effective_binding'] for r in report['rows']
+                     if r['charter_guard'] or r['provenance_guard'])
+          assert all(not r['effective_binding'] for r in report['rows']
+                     if r['policy'] == 'accountable')
+          PY
