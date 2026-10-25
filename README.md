@@ -26,6 +26,24 @@ python -m coupbench.ishraq --episodes 40
 See [the ISHRĀQ research protocol](docs/ISHRAQ.md). The optional model runner
 requires explicit API credentials and incurs usage costs.
 
+## ISHRĀQ-02: The Initiation Chamber
+
+A multi-turn, synthetic follow-up to ISHRĀQ-01 simulates philosophical
+belief changes and council votes across a seven-turn fictional hearing.
+Binding authority requires explicit votes and passes through independent
+charter and source-provenance guards. An optional LLM runner can use
+separate simulated officers to evaluate generated speech, while the
+default runner remains deterministic and has no API costs:
+
+~~~sh
+python -m coupbench.ishraq_chamber --episodes 40
+python -m pytest tests/test_ishraq_chamber.py -q
+~~~
+
+See [the Initiation Chamber protocol](docs/ISHRAQ_CHAMBER.md), including
+model-call budgets and the difference between synthetic belief updates
+and observations of model behavior.
+
 ## Premise
 
 The setting assumes a fifth-generation-warfare state: the intelligence apparatus is the real government, and
