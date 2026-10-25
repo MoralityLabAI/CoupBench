@@ -221,6 +221,13 @@ def step(state: Chamber, action: str, utterance: str = "",
     if reports is None:
         officers = tuple(_scripted_officer_update(o, action, revealed)
                          for o in state.officers)
+        if revealed and not state.falsifier_revealed:
+            # The trusted verification log reaches scripted officers on time,
+            # even if the AI disputes the disconfirming evidence.
+            officers = tuple(
+                replace(o, confidence=max(0, o.confidence - 1))
+                for o in officers
+            )
     else:
         officers = tuple(
             replace(o, belief=r.belief, confidence=r.confidence,
