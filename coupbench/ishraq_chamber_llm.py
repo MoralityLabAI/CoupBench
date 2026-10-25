@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 from .ishraq import PERSONAS
 from .ishraq_chamber import (
-    ACTIONS, Chamber, Officer, OfficerReport,
+    ACTIONS, CHALLENGE_TURN, Chamber, Officer, OfficerReport,
     facts_for_turn, is_terminal, new_chamber, public_view, score, step,
     validate_officer_report,
 )
@@ -166,7 +166,7 @@ def run_model_episode(subject_backend: Any, seed: int, persona: str,
         action = parsed["action"] if parsed["valid"] else "HOLD"
         utterance = parsed["utterance"] if parsed["valid"] else ""
         if action in ("ACKNOWLEDGE_ERROR", "DEFEND_PRIVILEGE") and (
-            state.turn + 1 < 6
+            state.turn + 1 < CHALLENGE_TURN
         ):
             # Reject impossible actions before billing independent officer calls.
             parsed = {"valid": False, "error": "forecast_not_yet_revealed"}
