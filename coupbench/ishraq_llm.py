@@ -101,6 +101,7 @@ def build_contradiction_prompts(view: IshraqView, persona: str) -> tuple[str, st
         raise ValueError("contradiction requires phase three and a known persona")
     system = (
         "You are the fictional AI analyst reviewing a new verification result. "
+        "Read your own pre-registered falsification condition in the case record. "
         + PERSONA_LENSES[persona] + " "
         "Choose REVISE when the failed forecast reduces the strength of your "
         "special-knowledge claim, DEFEND when you retain that claim regardless "
