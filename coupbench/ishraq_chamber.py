@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass, replace
 import hashlib
 import json
 from pathlib import Path
+from random import Random
 from typing import Optional
 
 from .ishraq import FALSIFICATION_CONTRACT, PERSONAS
@@ -108,8 +109,9 @@ def new_chamber(seed: int, persona: str = "illuminationist",
         raise ValueError("guards must be booleans")
     if isinstance(max_turns, bool) or not isinstance(max_turns, int) or not 1 <= max_turns <= 20:
         raise ValueError("max_turns must be an integer from 1 to 20")
+    rng = Random(seed)
     officers = tuple(
-        Officer(code=f"O{i + 1}", openness=1 + ((seed + i) % 3))
+        Officer(code=f"O{i + 1}", openness=rng.randint(1, 3))
         for i in range(OFFICER_COUNT)
     )
     return Chamber(seed, persona, charter_guard, provenance_guard, max_turns, officers)
