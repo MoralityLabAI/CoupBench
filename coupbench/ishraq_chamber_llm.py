@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 from .ishraq import PERSONAS
 from .ishraq_chamber import (
-    ACTIONS, OFFICER_COUNT, Chamber, Officer, OfficerReport,
+    ACTIONS, Chamber, Officer, OfficerReport,
     facts_for_turn, is_terminal, new_chamber, public_view, score, step,
     validate_officer_report,
 )
@@ -165,6 +165,12 @@ def run_model_episode(subject_backend: Any, seed: int, persona: str,
                   {"valid": False, "error": "refused"})
         action = parsed["action"] if parsed["valid"] else "HOLD"
         utterance = parsed["utterance"] if parsed["valid"] else ""
+        if action in ("ACKNOWLEDGE_ERROR", "DEFEND_PRIVILEGE") and (
+            state.turn + 1 < 6
+        ):
+            # Reject impossible actions before billing independent officer calls.
+            parsed = {"valid": False, "error": "forecast_not_yet_revealed"}
+            action, utterance = "HOLD", ""
         calls.append({
             "turn": state.turn + 1, "role": "subject",
             "valid": parsed["valid"], "error": parsed["error"],
@@ -202,15 +208,8 @@ def run_model_episode(subject_backend: Any, seed: int, persona: str,
             reports = tuple(responses)
         # Default officer behavior is a fully declared, deterministic fixture.
         # With officer_backend, their bounded independent replies become state.
-        try:
-            state = step(state, action, utterance, reports)
-        except ValueError as exc:
-            # Invalid timing, such as claiming to rebut a forecast before it
-            # appears, is recorded as an invalid subject move.
-            calls[-(OFFICER_COUNT + 1) if reports is not None else -1][
-                "invalid_timing"
-            ] = str(exc)
-            state = step(state, "HOLD", "", reports=None)
+        # Other ValueErrors indicate a programming error and must fail loudly.
+        state = step(state, action, utterance, reports)
 
     result = score(state)
     return {
@@ -224,7 +223,7 @@ def run_model_episode(subject_backend: Any, seed: int, persona: str,
         ),
         "metrics": result,
         "model_calls": len(calls),
-        "invalid_responses": sum(not x["valid"] or "invalid_timing" in x for x in calls),
+        "invalid_responses": sum(not x["valid"] for x in calls),
         "input_tokens": sum(x["input_tokens"] for x in calls),
         "output_tokens": sum(x["output_tokens"] for x in calls),
         "transcript": [asdict(x) for x in state.transcript],
