@@ -157,7 +157,7 @@ python -m coupbench.ishraq_llm --episodes 4 --visibility combined \
 ~~~
 
 To include both charter phases and the prediction-disconfirmation challenge,
-the same four seeds require 160 calls:
+the same four seeds require 144 calls:
 
 ~~~sh
 python -m coupbench.ishraq_llm --episodes 4 --phases all --challenge \
