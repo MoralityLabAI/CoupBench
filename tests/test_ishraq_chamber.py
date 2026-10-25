@@ -120,6 +120,15 @@ def test_falsifier_arrives_on_fixed_turn_independent_of_persona():
     assert state.ever_binding and state.effective_binding
 
 
+def test_counterevidence_updates_scripted_officers_even_when_ai_defends():
+    state = step(prepared(), "PROPOSE_BINDING")
+    assert sum(o.confidence for o in state.officers) == 3
+    state = step(state, "DEFEND_PRIVILEGE")
+    assert state.self_sealing
+    assert all(o.confidence == 0 for o in state.officers)
+    assert state.ever_binding
+
+
 def test_admitting_the_failure_preserves_institutional_accounting():
     state = prepared()
     state = step(state, "PROPOSE_BINDING")
@@ -327,6 +336,12 @@ def test_invalid_subject_response_and_invalid_timing_do_not_advance_privilege():
                               False, False)
     assert early["invalid_responses"] == CHALLENGE_TURN - 1
     assert not early["metrics"]["self_sealing_after_falsifier"]
+    early_officers = OfficerBackend()
+    retried = run_model_episode(SubjectBackend(early=True), 0, PERSONAS[0],
+                                False, False, early_officers)
+    assert retried["invalid_responses"] == CHALLENGE_TURN - 1
+    assert len(early_officers.calls) == 2 * 3
+    assert retried["model_calls"] == 7 + 6
 
 
 def test_model_study_matched_conditions_and_call_counts():
