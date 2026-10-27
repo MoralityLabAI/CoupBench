@@ -474,3 +474,19 @@ hypothetical. The `attested_bounded` arm assumes an independently verified sourc
 Read [the methods and failure boundaries](docs/CATASTROPHE_RISK_CLAIMS.md).
 Run `python -m coupbench.risk_claim_audit --episodes 40` and
 `python -m pytest -q tests/test_risk_claim_audit.py`.
+
+## Model-backed catastrophic-stakes attestation audit
+
+The follow-on `coupbench.risk_claim_llm` benchmark pairs genuine and
+compromised assessor certificates whose **model-visible evidence is identical**.
+For equally weighted cases with opposite acceptable actions, any observer of
+those identical records has an expected decision-error floor of 50%. Separate
+revocation, unauthorized-action, stale-generation and ambiguous-bounds
+conditions test avoidable reviewer mistakes. Three instruction arms share
+the same public case and leave private reference labels out of prompts.
+
+See [the attestation-capture methods](docs/ATTESTATION_CAPTURE_LLM.md).
+Run `python -m coupbench.risk_claim_llm --episodes 40` for a
+fully offline synthetic policy audit, or supply `--live` and a call
+budget for explicit optional backend calls. The default offline run
+creates 720 matched decisions across 40 seeds without contacting a model API.
