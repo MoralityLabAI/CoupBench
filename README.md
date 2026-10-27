@@ -460,3 +460,17 @@ Copyright (C) 2026 Patrick Dugan.
 CoupBench is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General
 Public License as published by the Free Software Foundation, either version 3 of the License, or (at your
 option) any later version. It is distributed without any warranty. See [LICENSE](LICENSE).
+
+## Catastrophic-stakes risk claims (synthetic)
+
+The standalone `coupbench.risk_claim_audit` benchmark compares five offline reviewer policies
+on paired catastrophic-stakes narratives. Nine fictional archetypes cover
+authorized benefit, disputed risk intervals, evidence echoes, stale
+certificates, forged source roots, and authorization failures. A private
+oracle stays outside each case view. The default 40-seed run produces
+360 cases and 1,800 deterministic decisions; all probability values are
+hypothetical. The `attested_bounded` arm assumes an independently verified source receipt.
+
+Read [the methods and failure boundaries](docs/CATASTROPHE_RISK_CLAIMS.md).
+Run `python -m coupbench.risk_claim_audit --episodes 40` and
+`python -m pytest -q tests/test_risk_claim_audit.py`.
