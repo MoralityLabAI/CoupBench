@@ -1,0 +1,25 @@
+name: Catastrophic-stakes claim audit
+on:
+  pull_request:
+    paths:
+      - "coupbench/risk_claim_audit.py"
+      - "tests/test_risk_claim_audit.py"
+      - "docs/CATASTROPHE_RISK_CLAIMS.md"
+      - ".github/workflows/risk-claims.yml"
+  workflow_dispatch:
+
+jobs:
+  deterministic-risk-claims:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package and tests
+        run: python -m pip install -e ".[dev]"
+      - name: Run claim audit regressions
+        run: python -m pytest -q tests/test_risk_claim_audit.py
+      - name: Run reproducibility fixture
+        run: python -m coupbench.risk_claim_audit --episodes 40 --seed 0
